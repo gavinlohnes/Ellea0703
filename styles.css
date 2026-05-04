@@ -135,6 +135,11 @@ body {
   white-space: pre-wrap;
 }
 
+/* Mission brief output */
+.mission-output {
+  min-height: 100px;
+}
+
 /* Nutrition HUD */
 .panel-nutrition {
   border-color: #ff1a3d55;
@@ -261,6 +266,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* Intelligence panel */
+.panel-intel {
+  border-color: #ff8a3d55;
 }
 
 /* Responsive */
