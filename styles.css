@@ -59,6 +59,7 @@ body {
   padding: 12px 12px 14px;
   background: linear-gradient(135deg, #101018, #050509);
   border: 1px solid #262632;
+  margin-bottom: 12px;
 }
 
 .panel-title {
@@ -88,6 +89,11 @@ body {
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #ff1a3d, #ff0040);
+  box-shadow: 0 0 12px rgba(255, 0, 64, 0.4);
 }
 
 .btn.small {
@@ -217,6 +223,10 @@ body {
   color: #c0c0d8;
 }
 
+.macro {
+  opacity: 0.9;
+}
+
 /* Quick row */
 .quick-row {
   display: flex;
@@ -229,6 +239,28 @@ body {
   font-size: 0.7rem;
   color: #8a8aa0;
   margin-top: 6px;
+}
+
+/* Weekly panel */
+.panel-weekly {
+  border-color: #444457;
+}
+
+.weekly-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.weekly-block {
+  background: #080810;
+  border-radius: 8px;
+  padding: 8px;
+  border: 1px solid #262632;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 /* Responsive */
