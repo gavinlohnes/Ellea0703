@@ -100,10 +100,21 @@ body {
   font-size: 0.7rem;
 }
 
+.btn.full {
+  width: 100%;
+  justify-content: center;
+}
+
 .btn.ghost {
   border-color: #444457;
   background: transparent;
   color: #c0c0d0;
+}
+
+.btn.danger {
+  border-color: #ff4b4b;
+  background: #2a0505;
+  color: #ffdede;
 }
 
 .btn:hover {
@@ -174,10 +185,67 @@ body {
   background: #1a0b10;
 }
 
+/* Meal cards */
+.meal-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.meal-card {
+  background: #070711;
+  border-radius: 8px;
+  border: 1px solid #262632;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meal-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #f5f5ff;
+}
+
+.meal-tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #ff8aa0;
+}
+
+.meal-macros {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #c0c0d8;
+}
+
+.macro {
+  opacity: 0.9;
+}
+
+/* Quick row */
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .hint {
   font-size: 0.7rem;
   color: #8a8aa0;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 /* Responsive */
