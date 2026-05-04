@@ -1,4 +1,4 @@
-// BEYOND v1 – Training + Nutrition + Weekly + Intelligence (Phase 5)
+// BEYOND OS v2 – Training + Nutrition + Recovery + Habits + Weekly Intel
 
 // ----------------------
 // TRAINING ENGINE
@@ -30,14 +30,14 @@ const datasetB = {
   performanceDelta: -0.173
 };
 
-function renderOutput(dataset) {
+function renderOutputTo(elId, dataset) {
   const coreMarkState = getCoreMarkState(
     dataset.fatigueScore,
     dataset.recoveryScore,
     dataset.trainingLoadIndex
   );
 
-  const outputEl = document.getElementById("output");
+  const outputEl = document.getElementById(elId);
   if (!outputEl) return;
 
   outputEl.innerText =
@@ -56,7 +56,6 @@ function renderOutput(dataset) {
 const TARGET_CALORIES = 2200;
 const TARGET_PROTEIN = 160;
 
-// Anchors (persistent)
 let anchors = JSON.parse(localStorage.getItem("anchors")) || {
   A: { name: "Anchor A", calories: 700, protein: 45 },
   B: { name: "Anchor B", calories: 700, protein: 45 }
@@ -72,13 +71,32 @@ function saveAnchors() {
 }
 
 function updateAnchorUI() {
-  document.getElementById("anchorAName").textContent = anchors.A.name;
-  document.getElementById("anchorACals").textContent = `${anchors.A.calories} kcal`;
-  document.getElementById("anchorAProtein").textContent = `${anchors.A.protein} g protein`;
+  const idsA = [
+    ["anchorAName", "anchorACals", "anchorAProtein"],
+    ["anchorAName_n", "anchorACals_n", "anchorAProtein_n"]
+  ];
+  const idsB = [
+    ["anchorBName", "anchorBCals", "anchorBProtein"],
+    ["anchorBName_n", "anchorBCals_n", "anchorBProtein_n"]
+  ];
 
-  document.getElementById("anchorBName").textContent = anchors.B.name;
-  document.getElementById("anchorBCals").textContent = `${anchors.B.calories} kcal`;
-  document.getElementById("anchorBProtein").textContent = `${anchors.B.protein} g protein`;
+  idsA.forEach(([nameId, calsId, protId]) => {
+    const nameEl = document.getElementById(nameId);
+    const calsEl = document.getElementById(calsId);
+    const protEl = document.getElementById(protId);
+    if (nameEl) nameEl.textContent = anchors.A.name;
+    if (calsEl) calsEl.textContent = `${anchors.A.calories} kcal`;
+    if (protEl) protEl.textContent = `${anchors.A.protein} g protein`;
+  });
+
+  idsB.forEach(([nameId, calsId, protId]) => {
+    const nameEl = document.getElementById(nameId);
+    const calsEl = document.getElementById(calsId);
+    const protEl = document.getElementById(protId);
+    if (nameEl) nameEl.textContent = anchors.B.name;
+    if (calsEl) calsEl.textContent = `${anchors.B.calories} kcal`;
+    if (protEl) protEl.textContent = `${anchors.B.protein} g protein`;
+  });
 }
 
 function computeMode() {
@@ -91,20 +109,35 @@ function computeMode() {
 }
 
 function updateNutritionHUD() {
-  const caloriesDisplay = document.getElementById("caloriesDisplay");
-  const proteinDisplay = document.getElementById("proteinDisplay");
-  const modeDisplay = document.getElementById("modeDisplay");
-  const anchorStatus = document.getElementById("anchorStatus");
+  const calIds = ["caloriesDisplay", "caloriesDisplay_n"];
+  const protIds = ["proteinDisplay", "proteinDisplay_n"];
+  const modeIds = ["modeDisplay", "modeDisplay_n"];
+  const anchorIds = ["anchorStatus", "anchorStatus_n"];
 
-  caloriesDisplay.textContent = `${currentCalories} / ${TARGET_CALORIES}`;
-  proteinDisplay.textContent = `${currentProtein} / ${TARGET_PROTEIN} g`;
+  calIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = `${currentCalories} / ${TARGET_CALORIES}`;
+  });
+
+  protIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = `${currentProtein} / ${TARGET_PROTEIN} g`;
+  });
 
   const mode = computeMode();
-  modeDisplay.textContent = mode;
+  modeIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = mode;
+  });
 
   const aMark = anchorALogged ? "☑" : "☐";
   const bMark = anchorBLogged ? "☑" : "☐";
-  anchorStatus.textContent = `A: ${aMark}  B: ${bMark}`;
+  anchorIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = `A: ${aMark}  B: ${bMark}`;
+  });
+
+  updateRecoveryToday(); // nutrition feeds readiness
 }
 
 function logAnchor(anchorKey) {
@@ -156,6 +189,113 @@ function editAnchor(anchorKey) {
   anchors[anchorKey] = { name, calories, protein };
   saveAnchors();
   updateAnchorUI();
+}
+
+// ----------------------
+// HYDRATION + SLEEP + RECOVERY (v2)
+// ----------------------
+
+const HYDRATION_TARGET = 3200;
+let hydrationToday = 0;
+let sleepHours = 0;
+
+let habitsState = JSON.parse(localStorage.getItem("habitsState")) || {
+  today: [false, false, false]
+};
+
+function saveHabits() {
+  localStorage.setItem("habitsState", JSON.stringify(habitsState));
+}
+
+function updateHydrationUI() {
+  const labelEl = document.getElementById("hydrationLabel");
+  const todayEl = document.getElementById("hydrationToday");
+  const fillEl = document.getElementById("hydrationFill");
+
+  const val = `${hydrationToday} / ${HYDRATION_TARGET} ml`;
+  if (labelEl) labelEl.textContent = val;
+  if (todayEl) todayEl.textContent = val;
+
+  const pct = Math.max(0, Math.min(100, (hydrationToday / HYDRATION_TARGET) * 100));
+  if (fillEl) fillEl.style.width = `${pct}%`;
+
+  updateRecoveryToday();
+}
+
+function addHydration(amount) {
+  hydrationToday += amount;
+  updateHydrationUI();
+}
+
+function resetHydration() {
+  hydrationToday = 0;
+  updateHydrationUI();
+}
+
+function updateHabitsUI() {
+  const toggles = document.querySelectorAll(".habit-toggle");
+  toggles.forEach(t => {
+    const idx = parseInt(t.dataset.habit, 10);
+    t.checked = habitsState.today[idx] || false;
+  });
+
+  const done = habitsState.today.filter(Boolean).length;
+  const summaryEl = document.getElementById("habitSummary");
+  if (summaryEl) summaryEl.textContent = `${done} / 3 locked in.`;
+
+  const trainingHabitEl = document.getElementById("habitLockTraining");
+  if (trainingHabitEl) trainingHabitEl.textContent = `${done} / 3`;
+}
+
+function toggleHabit(idx, value) {
+  habitsState.today[idx] = value;
+  saveHabits();
+  updateHabitsUI();
+  updateRecoveryToday();
+}
+
+function computeRecoveryScore() {
+  const sleepRatio = Math.min(1, sleepHours / 8);
+  const hydrationRatio = Math.min(1, hydrationToday / HYDRATION_TARGET);
+  const proteinRatio = Math.min(1, currentProtein / TARGET_PROTEIN);
+
+  const habitsDone = habitsState.today.filter(Boolean).length;
+  const habitRatio = habitsDone / 3;
+
+  let score =
+    40 +
+    sleepRatio * 25 +
+    hydrationRatio * 15 +
+    proteinRatio * 15 +
+    habitRatio * 5;
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  return score;
+}
+
+function classifyReadiness(score) {
+  if (score >= 80) return "GREEN – Push";
+  if (score >= 60) return "YELLOW – Maintain";
+  return "RED – Back Off";
+}
+
+function updateRecoveryToday() {
+  const sleepInput = document.getElementById("sleepInput");
+  if (sleepInput) {
+    const val = parseFloat(sleepInput.value);
+    sleepHours = isNaN(val) ? 0 : val;
+  }
+
+  const score = computeRecoveryScore();
+  const tag = classifyReadiness(score);
+
+  const todayEl = document.getElementById("recoveryScoreToday");
+  const trainingEl = document.getElementById("recoveryScoreTraining");
+  const tagEl = document.getElementById("readinessTag");
+
+  if (todayEl) todayEl.textContent = score;
+  if (trainingEl) trainingEl.textContent = score;
+  if (tagEl) tagEl.textContent = tag;
 }
 
 // ----------------------
@@ -212,26 +352,30 @@ function updateWeeklyUI() {
   const summary = summarizeWeek();
 
   if (!summary.days) {
-    weeklyCaloriesEl.textContent = "0";
-    weeklyProteinEl.textContent = "0 g";
-    weeklyAnchorsEl.textContent = "0%";
-    weeklyModesEl.textContent = "–";
-    updateMissionBrief(summary);
+    if (weeklyCaloriesEl) weeklyCaloriesEl.textContent = "0";
+    if (weeklyProteinEl) weeklyProteinEl.textContent = "0 g";
+    if (weeklyAnchorsEl) weeklyAnchorsEl.textContent = "0%";
+    if (weeklyModesEl) weeklyModesEl.textContent = "–";
+    updateMissionBrief(summary, "missionBrief");
+    updateMissionBrief(summary, "missionBrief_training");
     return;
   }
 
-  weeklyCaloriesEl.textContent = `${summary.avgCal}`;
-  weeklyProteinEl.textContent = `${summary.avgProt} g`;
-  weeklyAnchorsEl.textContent = `${summary.adherence}%`;
+  if (weeklyCaloriesEl) weeklyCaloriesEl.textContent = `${summary.avgCal}`;
+  if (weeklyProteinEl) weeklyProteinEl.textContent = `${summary.avgProt} g`;
+  if (weeklyAnchorsEl) weeklyAnchorsEl.textContent = `${summary.adherence}%`;
 
   const modeParts = [];
   if (summary.modeCounts.FAST) modeParts.push(`FAST ${summary.modeCounts.FAST}`);
   if (summary.modeCounts.BALANCED) modeParts.push(`BAL ${summary.modeCounts.BALANCED}`);
   if (summary.modeCounts.CHILL) modeParts.push(`CHILL ${summary.modeCounts.CHILL}`);
 
-  weeklyModesEl.textContent = modeParts.length ? modeParts.join(" · ") : "–";
+  if (weeklyModesEl) {
+    weeklyModesEl.textContent = modeParts.length ? modeParts.join(" · ") : "–";
+  }
 
-  updateMissionBrief(summary);
+  updateMissionBrief(summary, "missionBrief");
+  updateMissionBrief(summary, "missionBrief_training");
 }
 
 function closeDayAndLog() {
@@ -253,14 +397,18 @@ function closeDayAndLog() {
   saveWeekNutrition();
   updateWeeklyUI();
   resetNutrition();
+  resetHydration();
+  habitsState.today = [false, false, false];
+  saveHabits();
+  updateHabitsUI();
 }
 
 // ----------------------
-// INTELLIGENCE LAYER – MISSION BRIEF
+// INTELLIGENCE – MISSION BRIEF
 // ----------------------
 
-function updateMissionBrief(summary) {
-  const briefEl = document.getElementById("missionBrief");
+function updateMissionBrief(summary, elementId) {
+  const briefEl = document.getElementById(elementId);
   if (!briefEl) return;
 
   if (!summary.days) {
@@ -271,7 +419,6 @@ function updateMissionBrief(summary) {
 
   const { days, avgCal, avgProt, adherence, modeCounts } = summary;
 
-  // Simple nutrition → fatigue / recovery interpretation
   let fatigueImpact = "neutral";
   let recoveryImpact = "neutral";
   let trainingSuggestion = "Keep training as planned.";
@@ -313,33 +460,119 @@ function updateMissionBrief(summary) {
 }
 
 // ----------------------
+// NAVIGATION
+// ----------------------
+
+function switchPage(pageKey) {
+  document.querySelectorAll(".page").forEach(p => {
+    if (p.id === `page-${pageKey}`) {
+      p.classList.add("on");
+    } else {
+      p.classList.remove("on");
+    }
+  });
+
+  document.querySelectorAll(".nav-tab").forEach(tab => {
+    if (tab.dataset.page === pageKey) {
+      tab.classList.add("on");
+    } else {
+      tab.classList.remove("on");
+    }
+  });
+}
+
+// ----------------------
 // WIRE UP UI
 // ----------------------
 
 window.addEventListener("DOMContentLoaded", () => {
-  // Training
-  document.getElementById("runDatasetA").addEventListener("click", () => renderOutput(datasetA));
-  document.getElementById("runDatasetB").addEventListener("click", () => renderOutput(datasetB));
-  renderOutput(datasetA);
+  // Training – Today
+  const btnA = document.getElementById("runDatasetA");
+  const btnB = document.getElementById("runDatasetB");
+  if (btnA) btnA.addEventListener("click", () => renderOutputTo("output", datasetA));
+  if (btnB) btnB.addEventListener("click", () => renderOutputTo("output", datasetB));
+  renderOutputTo("output", datasetA);
 
-  // Nutrition
-  document.getElementById("logAnchorA").addEventListener("click", () => logAnchor("A"));
-  document.getElementById("logAnchorB").addEventListener("click", () => logAnchor("B"));
-  document.getElementById("quickAddProtein").addEventListener("click", quickAddProtein);
-  document.getElementById("quickAddCalories").addEventListener("click", quickAddCalories);
-  document.getElementById("resetNutrition").addEventListener("click", resetNutrition);
+  // Training – Training page
+  const btnA2 = document.getElementById("runDatasetA_training");
+  const btnB2 = document.getElementById("runDatasetB_training");
+  if (btnA2) btnA2.addEventListener("click", () => renderOutputTo("output_training", datasetA));
+  if (btnB2) btnB2.addEventListener("click", () => renderOutputTo("output_training", datasetB));
+  renderOutputTo("output_training", datasetA);
 
+  // Nutrition – Today + Nutrition pages
+  const logAIds = ["logAnchorA", "logAnchorA_n"];
+  const logBIds = ["logAnchorB", "logAnchorB_n"];
+  const quickProtIds = ["quickAddProtein", "quickAddProtein_n"];
+  const quickCalIds = ["quickAddCalories", "quickAddCalories_n"];
+  const resetIds = ["resetNutrition", "resetNutrition_n"];
+
+  logAIds.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", () => logAnchor("A"));
+  });
+
+  logBIds.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", () => logAnchor("B"));
+  });
+
+  quickProtIds.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", quickAddProtein);
+  });
+
+  quickCalIds.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", quickAddCalories);
+  });
+
+  resetIds.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", resetNutrition);
+  });
+
+  // Edit buttons
   document.querySelectorAll(".edit-btn").forEach(btn => {
     btn.addEventListener("click", () => editAnchor(btn.dataset.anchor));
   });
 
   // Weekly
   const closeDayBtn = document.getElementById("closeDay");
-  if (closeDayBtn) {
-    closeDayBtn.addEventListener("click", closeDayAndLog);
+  if (closeDayBtn) closeDayBtn.addEventListener("click", closeDayAndLog);
+
+  // Nav tabs
+  document.querySelectorAll(".nav-tab").forEach(tab => {
+    tab.addEventListener("click", () => switchPage(tab.dataset.page));
+  });
+
+  // Hydration
+  const h250 = document.getElementById("hydrationAdd250");
+  const h500 = document.getElementById("hydrationAdd500");
+  const hReset = document.getElementById("hydrationReset");
+  if (h250) h250.addEventListener("click", () => addHydration(250));
+  if (h500) h500.addEventListener("click", () => addHydration(500));
+  if (hReset) hReset.addEventListener("click", resetHydration);
+
+  // Sleep
+  const sleepInput = document.getElementById("sleepInput");
+  if (sleepInput) {
+    sleepInput.addEventListener("input", updateRecoveryToday);
   }
 
+  // Habits
+  document.querySelectorAll(".habit-toggle").forEach(t => {
+    t.addEventListener("change", () => {
+      const idx = parseInt(t.dataset.habit, 10);
+      toggleHabit(idx, t.checked);
+    });
+  });
+
+  // Initial state
   updateAnchorUI();
   updateNutritionHUD();
+  updateHydrationUI();
+  updateHabitsUI();
   updateWeeklyUI();
+  switchPage("today");
 });
