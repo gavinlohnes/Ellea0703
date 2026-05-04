@@ -90,11 +90,6 @@ body {
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-.btn.primary {
-  background: linear-gradient(135deg, #ff1a3d, #ff0040);
-  box-shadow: 0 0 12px rgba(255, 0, 64, 0.4);
-}
-
 .btn.small {
   padding: 6px 10px;
   font-size: 0.7rem;
@@ -102,7 +97,6 @@ body {
 
 .btn.full {
   width: 100%;
-  justify-content: center;
 }
 
 .btn.ghost {
@@ -120,11 +114,6 @@ body {
 .btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 0 10px rgba(255, 0, 64, 0.35);
-}
-
-.btn:active {
-  transform: translateY(0);
-  box-shadow: none;
 }
 
 /* Output */
@@ -162,25 +151,21 @@ body {
   gap: 4px;
 }
 
-.nutrition-block .label {
+.label {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: #a0a0b5;
 }
 
-.nutrition-block .value {
+.value {
   font-size: 0.9rem;
   color: #f5f5ff;
 }
 
 .mode-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.75rem;
   border: 1px solid #ff1a3d;
   background: #1a0b10;
 }
@@ -213,14 +198,16 @@ body {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #f5f5ff;
 }
 
-.meal-tag {
+.edit-btn {
+  background: transparent;
+  border: 1px solid #444457;
+  color: #c0c0d0;
+  padding: 2px 6px;
+  border-radius: 6px;
   font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #ff8aa0;
+  cursor: pointer;
 }
 
 .meal-macros {
@@ -228,10 +215,6 @@ body {
   justify-content: space-between;
   font-size: 0.75rem;
   color: #c0c0d8;
-}
-
-.macro {
-  opacity: 0.9;
 }
 
 /* Quick row */
