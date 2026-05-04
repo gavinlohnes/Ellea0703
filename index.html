@@ -77,3 +77,54 @@
         <!-- QUICK ADD ROW -->
         <div class="quick-row">
           <button id="quickAddProtein" class="btn small ghost">+ 25 g Protein</button>
+          <button id="quickAddCalories" class="btn small ghost">+ 250 kcal</button>
+          <button id="resetNutrition" class="btn small danger">Reset Day</button>
+        </div>
+
+        <p class="hint">
+          Anchors are fully editable. BEYOND remembers your meals and macros automatically.
+        </p>
+      </section>
+    </main>
+
+    <!-- WEEKLY NUTRITION PANEL -->
+    <section class="panel panel-weekly">
+      <h2 class="panel-title">Weekly Nutrition</h2>
+      <div class="weekly-grid">
+        <div class="weekly-block">
+          <span class="label">Avg Calories</span>
+          <span id="weeklyCalories" class="value">0</span>
+        </div>
+        <div class="weekly-block">
+          <span class="label">Avg Protein</span>
+          <span id="weeklyProtein" class="value">0 g</span>
+        </div>
+        <div class="weekly-block">
+          <span class="label">Anchor Adherence</span>
+          <span id="weeklyAnchors" class="value">0%</span>
+        </div>
+        <div class="weekly-block">
+          <span class="label">Mode Mix</span>
+          <span id="weeklyModes" class="value">–</span>
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button id="closeDay" class="btn small primary">Close Day & Log</button>
+      </div>
+
+      <p class="hint">
+        Closing the day logs today into your 7‑day view. This doesn’t have to be perfect—just consistent.
+      </p>
+    </section>
+
+    <!-- TRAINING INTELLIGENCE PANEL -->
+    <section class="panel panel-intel">
+      <h2 class="panel-title">Mission Brief</h2>
+      <pre id="missionBrief" class="output mission-output"></pre>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
