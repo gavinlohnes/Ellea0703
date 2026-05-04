@@ -51,24 +51,24 @@
         <div class="meal-cards">
           <div class="meal-card">
             <div class="meal-header">
-              <span class="meal-title">Anchor A</span>
-              <span class="meal-tag">Prepped</span>
+              <span class="meal-title" id="anchorAName">Anchor A</span>
+              <button class="edit-btn" data-anchor="A">Edit</button>
             </div>
             <div class="meal-macros">
-              <span class="macro">700 kcal</span>
-              <span class="macro">45 g protein</span>
+              <span id="anchorACals" class="macro">700 kcal</span>
+              <span id="anchorAProtein" class="macro">45 g protein</span>
             </div>
             <button id="logAnchorA" class="btn small full">Log Anchor A</button>
           </div>
 
           <div class="meal-card">
             <div class="meal-header">
-              <span class="meal-title">Anchor B</span>
-              <span class="meal-tag">Prepped</span>
+              <span class="meal-title" id="anchorBName">Anchor B</span>
+              <button class="edit-btn" data-anchor="B">Edit</button>
             </div>
             <div class="meal-macros">
-              <span class="macro">700 kcal</span>
-              <span class="macro">45 g protein</span>
+              <span id="anchorBCals" class="macro">700 kcal</span>
+              <span id="anchorBProtein" class="macro">45 g protein</span>
             </div>
             <button id="logAnchorB" class="btn small full">Log Anchor B</button>
           </div>
@@ -82,7 +82,7 @@
         </div>
 
         <p class="hint">
-          Anchor A / B are your main prepped meals. Quick adds cover snacks, shakes, or extras. This HUD is your daily nutrition readout.
+          Anchors are fully editable. BEYOND remembers your meals and macros automatically.
         </p>
       </section>
     </main>
