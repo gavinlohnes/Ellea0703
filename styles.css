@@ -1,0 +1,146 @@
+/* styles.css */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #050509;
+  color: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+#app {
+  width: 100%;
+  max-width: 900px;
+  border: 1px solid #ff1f3d;
+  background: radial-gradient(circle at top, #151520 0, #050509 55%);
+  padding: 24px 24px 16px;
+  border-radius: 10px;
+  box-shadow: 0 0 24px rgba(255, 0, 60, 0.35);
+}
+
+header {
+  border-bottom: 1px solid #ff1f3d33;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+header h1 {
+  font-size: 1.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ff1f3d;
+}
+
+header h2 {
+  font-size: 0.9rem;
+  color: #c0c0c0;
+  margin-top: 4px;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+button {
+  background: #ff1f3d;
+  color: #f5f5f5;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+  box-shadow: 0 0 10px rgba(255, 0, 60, 0.4);
+}
+
+button:hover {
+  background: #ff3b55;
+  transform: translateY(-1px);
+  box-shadow: 0 0 14px rgba(255, 0, 60, 0.6);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 0 6px rgba(255, 0, 60, 0.3);
+}
+
+section {
+  border: 1px solid #ff1f3d33;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #0b0b12;
+}
+
+section h3 {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #ff1f3d;
+  margin-bottom: 8px;
+}
+
+#outputPanel {
+  background: #050509;
+  border-radius: 6px;
+  padding: 10px;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  color: #e5e5e5;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.bands-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.band-card {
+  background: #050509;
+  border-radius: 6px;
+  padding: 8px 10px;
+  border: 1px solid #ff1f3d33;
+}
+
+.band-card h4 {
+  font-size: 0.85rem;
+  color: #ff6b82;
+  margin-bottom: 6px;
+}
+
+.band-card ul {
+  list-style: none;
+  font-size: 0.8rem;
+  color: #d0d0d0;
+}
+
+.band-card li + li {
+  margin-top: 2px;
+}
+
+footer {
+  margin-top: 14px;
+  border-top: 1px solid #ff1f3d33;
+  padding-top: 8px;
+  font-size: 0.75rem;
+  color: #808080;
+  display: flex;
+  justify-content: space-between;
+}
