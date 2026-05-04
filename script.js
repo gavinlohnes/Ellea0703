@@ -1,10 +1,9 @@
-// BEYOND v1 – Training + Nutrition HUD
+// BEYOND v1 – Training + Nutrition HUD (Phase 2)
 
 // ----------------------
 // TRAINING ENGINE
 // ----------------------
 
-// Core state logic (calibrated)
 function getCoreMarkState(fatigueScore, recoveryScore, trainingLoadIndex) {
   if (fatigueScore >= 63 && trainingLoadIndex >= 78) {
     return "OVERLOAD";
@@ -15,7 +14,6 @@ function getCoreMarkState(fatigueScore, recoveryScore, trainingLoadIndex) {
   }
 }
 
-// Demo datasets
 const datasetA = {
   label: "Dataset A – Stable Training (Expected ACTIVE)",
   fatigueScore: 26.4,
@@ -52,18 +50,15 @@ function renderOutput(dataset) {
 }
 
 // ----------------------
-// NUTRITION HUD – PHASE 1
+// NUTRITION HUD – STATE
 // ----------------------
 
-// Targets (you can tweak these later)
 const TARGET_CALORIES = 2200;
 const TARGET_PROTEIN = 160;
 
-// Anchor macros (example values)
 const ANCHOR_A = { calories: 700, protein: 45 };
 const ANCHOR_B = { calories: 700, protein: 45 };
 
-// State
 let currentCalories = 0;
 let currentProtein = 0;
 let anchorALogged = false;
@@ -80,7 +75,6 @@ function updateNutritionHUD() {
   caloriesDisplay.textContent = `${currentCalories} / ${TARGET_CALORIES}`;
   proteinDisplay.textContent = `${currentProtein} / ${TARGET_PROTEIN} g`;
 
-  // Mode logic
   const calRatio = currentCalories / TARGET_CALORIES;
   const proteinRatio = currentProtein / TARGET_PROTEIN;
 
@@ -96,7 +90,6 @@ function updateNutritionHUD() {
 
   modeDisplay.textContent = mode;
 
-  // Anchors
   const aMark = anchorALogged ? "☑" : "☐";
   const bMark = anchorBLogged ? "☑" : "☐";
   anchorStatus.textContent = `A: ${aMark}  B: ${bMark}`;
@@ -112,6 +105,16 @@ function logAnchor(anchor) {
     currentProtein += ANCHOR_B.protein;
     anchorBLogged = true;
   }
+  updateNutritionHUD();
+}
+
+function quickAddProtein() {
+  currentProtein += 25;
+  updateNutritionHUD();
+}
+
+function quickAddCalories() {
+  currentCalories += 250;
   updateNutritionHUD();
 }
 
@@ -132,31 +135,23 @@ window.addEventListener("DOMContentLoaded", () => {
   const btnA = document.getElementById("runDatasetA");
   const btnB = document.getElementById("runDatasetB");
 
-  if (btnA) {
-    btnA.addEventListener("click", () => renderOutput(datasetA));
-  }
-  if (btnB) {
-    btnB.addEventListener("click", () => renderOutput(datasetB));
-  }
+  if (btnA) btnA.addEventListener("click", () => renderOutput(datasetA));
+  if (btnB) btnB.addEventListener("click", () => renderOutput(datasetB));
 
-  // Show Dataset A by default
   renderOutput(datasetA);
 
   // Nutrition buttons
   const logAnchorAButton = document.getElementById("logAnchorA");
   const logAnchorBButton = document.getElementById("logAnchorB");
+  const quickProteinButton = document.getElementById("quickAddProtein");
+  const quickCaloriesButton = document.getElementById("quickAddCalories");
   const resetNutritionButton = document.getElementById("resetNutrition");
 
-  if (logAnchorAButton) {
-    logAnchorAButton.addEventListener("click", () => logAnchor("A"));
-  }
-  if (logAnchorBButton) {
-    logAnchorBButton.addEventListener("click", () => logAnchor("B"));
-  }
-  if (resetNutritionButton) {
-    resetNutritionButton.addEventListener("click", resetNutrition);
-  }
+  if (logAnchorAButton) logAnchorAButton.addEventListener("click", () => logAnchor("A"));
+  if (logAnchorBButton) logAnchorBButton.addEventListener("click", () => logAnchor("B"));
+  if (quickProteinButton) quickProteinButton.addEventListener("click", quickAddProtein);
+  if (quickCaloriesButton) quickCaloriesButton.addEventListener("click", quickAddCalories);
+  if (resetNutritionButton) resetNutritionButton.addEventListener("click", resetNutrition);
 
-  // Initialize HUD
   updateNutritionHUD();
 });
