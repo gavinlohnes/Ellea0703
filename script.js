@@ -1,4 +1,4 @@
-// BEYOND v1 – Training + Nutrition HUD (Phase 2)
+// BEYOND v1 – Training + Nutrition HUD (Phase 3)
 
 // ----------------------
 // TRAINING ENGINE
@@ -56,21 +56,36 @@ function renderOutput(dataset) {
 const TARGET_CALORIES = 2200;
 const TARGET_PROTEIN = 160;
 
-const ANCHOR_A = { calories: 700, protein: 45 };
-const ANCHOR_B = { calories: 700, protein: 45 };
+// Load anchors or default
+let anchors = JSON.parse(localStorage.getItem("anchors")) || {
+  A: { name: "Anchor A", calories: 700, protein: 45 },
+  B: { name: "Anchor B", calories: 700, protein: 45 }
+};
 
 let currentCalories = 0;
 let currentProtein = 0;
 let anchorALogged = false;
 let anchorBLogged = false;
 
+function saveAnchors() {
+  localStorage.setItem("anchors", JSON.stringify(anchors));
+}
+
+function updateAnchorUI() {
+  document.getElementById("anchorAName").textContent = anchors.A.name;
+  document.getElementById("anchorACals").textContent = `${anchors.A.calories} kcal`;
+  document.getElementById("anchorAProtein").textContent = `${anchors.A.protein} g protein`;
+
+  document.getElementById("anchorBName").textContent = anchors.B.name;
+  document.getElementById("anchorBCals").textContent = `${anchors.B.calories} kcal`;
+  document.getElementById("anchorBProtein").textContent = `${anchors.B.protein} g protein`;
+}
+
 function updateNutritionHUD() {
   const caloriesDisplay = document.getElementById("caloriesDisplay");
   const proteinDisplay = document.getElementById("proteinDisplay");
   const modeDisplay = document.getElementById("modeDisplay");
   const anchorStatus = document.getElementById("anchorStatus");
-
-  if (!caloriesDisplay || !proteinDisplay || !modeDisplay || !anchorStatus) return;
 
   caloriesDisplay.textContent = `${currentCalories} / ${TARGET_CALORIES}`;
   proteinDisplay.textContent = `${currentProtein} / ${TARGET_PROTEIN} g`;
@@ -84,8 +99,6 @@ function updateNutritionHUD() {
     mode = "FAST";
   } else if (calRatio >= 1.1 || proteinRatio <= 0.5) {
     mode = "CHILL";
-  } else {
-    mode = "BALANCED";
   }
 
   modeDisplay.textContent = mode;
@@ -96,15 +109,18 @@ function updateNutritionHUD() {
 }
 
 function logAnchor(anchor) {
+  const meal = anchors[anchor];
+
   if (anchor === "A" && !anchorALogged) {
-    currentCalories += ANCHOR_A.calories;
-    currentProtein += ANCHOR_A.protein;
+    currentCalories += meal.calories;
+    currentProtein += meal.protein;
     anchorALogged = true;
   } else if (anchor === "B" && !anchorBLogged) {
-    currentCalories += ANCHOR_B.calories;
-    currentProtein += ANCHOR_B.protein;
+    currentCalories += meal.calories;
+    currentProtein += meal.protein;
     anchorBLogged = true;
   }
+
   updateNutritionHUD();
 }
 
@@ -126,32 +142,45 @@ function resetNutrition() {
   updateNutritionHUD();
 }
 
+function editAnchor(anchorKey) {
+  const meal = anchors[anchorKey];
+
+  const name = prompt("Meal name:", meal.name);
+  if (!name) return;
+
+  const calories = parseInt(prompt("Calories:", meal.calories));
+  if (isNaN(calories)) return;
+
+  const protein = parseInt(prompt("Protein (g):", meal.protein));
+  if (isNaN(protein)) return;
+
+  anchors[anchorKey] = { name, calories, protein };
+  saveAnchors();
+  updateAnchorUI();
+}
+
 // ----------------------
 // WIRE UP UI
 // ----------------------
 
 window.addEventListener("DOMContentLoaded", () => {
-  // Training buttons
-  const btnA = document.getElementById("runDatasetA");
-  const btnB = document.getElementById("runDatasetB");
-
-  if (btnA) btnA.addEventListener("click", () => renderOutput(datasetA));
-  if (btnB) btnB.addEventListener("click", () => renderOutput(datasetB));
-
+  // Training
+  document.getElementById("runDatasetA").addEventListener("click", () => renderOutput(datasetA));
+  document.getElementById("runDatasetB").addEventListener("click", () => renderOutput(datasetB));
   renderOutput(datasetA);
 
-  // Nutrition buttons
-  const logAnchorAButton = document.getElementById("logAnchorA");
-  const logAnchorBButton = document.getElementById("logAnchorB");
-  const quickProteinButton = document.getElementById("quickAddProtein");
-  const quickCaloriesButton = document.getElementById("quickAddCalories");
-  const resetNutritionButton = document.getElementById("resetNutrition");
+  // Nutrition
+  document.getElementById("logAnchorA").addEventListener("click", () => logAnchor("A"));
+  document.getElementById("logAnchorB").addEventListener("click", () => logAnchor("B"));
+  document.getElementById("quickAddProtein").addEventListener("click", quickAddProtein);
+  document.getElementById("quickAddCalories").addEventListener("click", quickAddCalories);
+  document.getElementById("resetNutrition").addEventListener("click", resetNutrition);
 
-  if (logAnchorAButton) logAnchorAButton.addEventListener("click", () => logAnchor("A"));
-  if (logAnchorBButton) logAnchorBButton.addEventListener("click", () => logAnchor("B"));
-  if (quickProteinButton) quickProteinButton.addEventListener("click", quickAddProtein);
-  if (quickCaloriesButton) quickCaloriesButton.addEventListener("click", quickAddCalories);
-  if (resetNutritionButton) resetNutritionButton.addEventListener("click", resetNutrition);
+  // Edit buttons
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => editAnchor(btn.dataset.anchor));
+  });
 
+  updateAnchorUI();
   updateNutritionHUD();
 });
