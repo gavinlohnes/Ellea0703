@@ -1,57 +1,62 @@
-// index.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BEYOND v1 – Validation Harness</title>
+  <title>BEYOND v1 – Training + Nutrition</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="app">
-    <header>
+  <div class="app-shell">
+    <header class="app-header">
       <h1>BEYOND v1</h1>
-      <h2>Deterministic Control System – Validation Harness</h2>
+      <span class="app-tagline">Training · Nutrition · Recovery</span>
     </header>
 
-    <main>
-      <section id="controls">
-        <button id="runDatasetA">Run Dataset A (ACTIVE)</button>
-        <button id="runDatasetB">Run Dataset B (OVERLOAD)</button>
+    <main class="app-main">
+      <!-- TRAINING ENGINE PANEL -->
+      <section class="panel panel-training">
+        <h2 class="panel-title">Training Engine</h2>
+        <div class="button-row">
+          <button id="runDatasetA" class="btn primary">Run Dataset A</button>
+          <button id="runDatasetB" class="btn">Run Dataset B</button>
+        </div>
+        <pre id="output" class="output"></pre>
       </section>
 
-      <section id="output">
-        <h3>Output</h3>
-        <pre id="outputPanel">Awaiting execution…</pre>
-      </section>
+      <!-- NUTRITION BAR PANEL (PHASE 1) -->
+      <section class="panel panel-nutrition">
+        <h2 class="panel-title">Nutrition HUD</h2>
 
-      <section id="bands">
-        <h3>Truth Table (Target Bands)</h3>
-        <div class="bands-grid">
-          <div class="band-card">
-            <h4>Dataset A – Expected ACTIVE</h4>
-            <ul>
-              <li><strong>Fatigue:</strong> 30–50</li>
-              <li><strong>Recovery:</strong> 75–85</li>
-              <li><strong>Load:</strong> 55–65</li>
-              <li><strong>State:</strong> ACTIVE</li>
-            </ul>
+        <div class="nutrition-grid">
+          <div class="nutrition-block">
+            <span class="label">Calories</span>
+            <span id="caloriesDisplay" class="value">0 / 2200</span>
           </div>
-          <div class="band-card">
-            <h4>Dataset B – Expected OVERLOAD</h4>
-            <ul>
-              <li><strong>Fatigue:</strong> 70–85</li>
-              <li><strong>Recovery:</strong> 30–50</li>
-              <li><strong>Load:</strong> 85–95</li>
-              <li><strong>State:</strong> OVERLOAD</li>
-            </ul>
+          <div class="nutrition-block">
+            <span class="label">Protein</span>
+            <span id="proteinDisplay" class="value">0 / 160 g</span>
+          </div>
+          <div class="nutrition-block">
+            <span class="label">Mode</span>
+            <span id="modeDisplay" class="value mode-pill">BALANCED</span>
+          </div>
+          <div class="nutrition-block">
+            <span class="label">Anchors</span>
+            <span id="anchorStatus" class="value">A: ☐  B: ☐</span>
           </div>
         </div>
+
+        <div class="button-row">
+          <button id="logAnchorA" class="btn small">Log Anchor A</button>
+          <button id="logAnchorB" class="btn small">Log Anchor B</button>
+          <button id="resetNutrition" class="btn small ghost">Reset Day</button>
+        </div>
+
+        <p class="hint">
+          Anchor A / B are your prepped meals. This bar is your daily nutrition HUD: calories, protein, mode, and anchor status.
+        </p>
       </section>
     </main>
-
-    <footer>
-      <span>BEYOND v1 · Deterministic Validation Harness</span>
-    </footer>
   </div>
 
   <script src="script.js"></script>
