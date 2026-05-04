@@ -1,4 +1,4 @@
-// BEYOND v1 – Training + Nutrition + Weekly (Phase 4)
+// BEYOND v1 – Training + Nutrition + Weekly + Intelligence (Phase 5)
 
 // ----------------------
 // TRAINING ENGINE
@@ -168,18 +168,15 @@ function saveWeekNutrition() {
   localStorage.setItem("weekNutrition", JSON.stringify(weekNutrition));
 }
 
-function updateWeeklyUI() {
-  const weeklyCaloriesEl = document.getElementById("weeklyCalories");
-  const weeklyProteinEl = document.getElementById("weeklyProtein");
-  const weeklyAnchorsEl = document.getElementById("weeklyAnchors");
-  const weeklyModesEl = document.getElementById("weeklyModes");
-
+function summarizeWeek() {
   if (!weekNutrition.length) {
-    weeklyCaloriesEl.textContent = "0";
-    weeklyProteinEl.textContent = "0 g";
-    weeklyAnchorsEl.textContent = "0%";
-    weeklyModesEl.textContent = "–";
-    return;
+    return {
+      days: 0,
+      avgCal: 0,
+      avgProt: 0,
+      adherence: 0,
+      modeCounts: { FAST: 0, BALANCED: 0, CHILL: 0 }
+    };
   }
 
   let totalCal = 0;
@@ -201,18 +198,40 @@ function updateWeeklyUI() {
   const days = weekNutrition.length;
   const avgCal = Math.round(totalCal / days);
   const avgProt = Math.round(totalProt / days);
-  const adherence = Math.round((totalAnchors / totalPossibleAnchors) * 100);
+  const adherence = Math.round((totalAnchors / totalPossibleAnchors) * 100) || 0;
 
-  weeklyCaloriesEl.textContent = `${avgCal}`;
-  weeklyProteinEl.textContent = `${avgProt} g`;
-  weeklyAnchorsEl.textContent = `${isNaN(adherence) ? 0 : adherence}%`;
+  return { days, avgCal, avgProt, adherence, modeCounts };
+}
+
+function updateWeeklyUI() {
+  const weeklyCaloriesEl = document.getElementById("weeklyCalories");
+  const weeklyProteinEl = document.getElementById("weeklyProtein");
+  const weeklyAnchorsEl = document.getElementById("weeklyAnchors");
+  const weeklyModesEl = document.getElementById("weeklyModes");
+
+  const summary = summarizeWeek();
+
+  if (!summary.days) {
+    weeklyCaloriesEl.textContent = "0";
+    weeklyProteinEl.textContent = "0 g";
+    weeklyAnchorsEl.textContent = "0%";
+    weeklyModesEl.textContent = "–";
+    updateMissionBrief(summary);
+    return;
+  }
+
+  weeklyCaloriesEl.textContent = `${summary.avgCal}`;
+  weeklyProteinEl.textContent = `${summary.avgProt} g`;
+  weeklyAnchorsEl.textContent = `${summary.adherence}%`;
 
   const modeParts = [];
-  if (modeCounts.FAST) modeParts.push(`FAST ${modeCounts.FAST}`);
-  if (modeCounts.BALANCED) modeParts.push(`BAL ${modeCounts.BALANCED}`);
-  if (modeCounts.CHILL) modeParts.push(`CHILL ${modeCounts.CHILL}`);
+  if (summary.modeCounts.FAST) modeParts.push(`FAST ${summary.modeCounts.FAST}`);
+  if (summary.modeCounts.BALANCED) modeParts.push(`BAL ${summary.modeCounts.BALANCED}`);
+  if (summary.modeCounts.CHILL) modeParts.push(`CHILL ${summary.modeCounts.CHILL}`);
 
   weeklyModesEl.textContent = modeParts.length ? modeParts.join(" · ") : "–";
+
+  updateMissionBrief(summary);
 }
 
 function closeDayAndLog() {
@@ -234,6 +253,63 @@ function closeDayAndLog() {
   saveWeekNutrition();
   updateWeeklyUI();
   resetNutrition();
+}
+
+// ----------------------
+// INTELLIGENCE LAYER – MISSION BRIEF
+// ----------------------
+
+function updateMissionBrief(summary) {
+  const briefEl = document.getElementById("missionBrief");
+  if (!briefEl) return;
+
+  if (!summary.days) {
+    briefEl.textContent =
+      "No logged days yet.\n\nClose at least 3 days to unlock a mission brief for your next training block.";
+    return;
+  }
+
+  const { days, avgCal, avgProt, adherence, modeCounts } = summary;
+
+  // Simple nutrition → fatigue / recovery interpretation
+  let fatigueImpact = "neutral";
+  let recoveryImpact = "neutral";
+  let trainingSuggestion = "Keep training as planned.";
+
+  const calRatio = avgCal / TARGET_CALORIES;
+  const protRatio = avgProt / TARGET_PROTEIN;
+
+  if (calRatio <= 0.9 && protRatio >= 0.9) {
+    fatigueImpact = "slightly elevated (from frequent FAST days)";
+    recoveryImpact = "stable (protein is solid)";
+    trainingSuggestion = "Keep intensity, but consider 1 extra easy / recovery day if you feel worn down.";
+  } else if (calRatio >= 1.1 && protRatio >= 0.9) {
+    fatigueImpact = "reduced (you’re well‑fed)";
+    recoveryImpact = "enhanced (good protein support)";
+    trainingSuggestion = "You can afford 1–2 harder sessions next week if life stress is low.";
+  } else if (protRatio < 0.8) {
+    fatigueImpact = "higher than necessary (low protein)";
+    recoveryImpact = "limited (muscle repair under‑supported)";
+    trainingSuggestion = "Hold training where it is and tighten up protein before pushing harder.";
+  }
+
+  const modeSummaryParts = [];
+  if (modeCounts.FAST) modeSummaryParts.push(`${modeCounts.FAST} FAST`);
+  if (modeCounts.BALANCED) modeSummaryParts.push(`${modeCounts.BALANCED} BALANCED`);
+  if (modeCounts.CHILL) modeSummaryParts.push(`${modeCounts.CHILL} CHILL`);
+  const modeSummary = modeSummaryParts.join(" · ") || "No modes logged";
+
+  briefEl.textContent =
+    `Last ${days} days:\n` +
+    `- Avg calories: ${avgCal}\n` +
+    `- Avg protein: ${avgProt} g\n` +
+    `- Anchor adherence: ${adherence}%\n` +
+    `- Mode mix: ${modeSummary}\n\n` +
+    `Nutrition impact:\n` +
+    `- Fatigue: ${fatigueImpact}\n` +
+    `- Recovery: ${recoveryImpact}\n\n` +
+    `Next week – suggested training focus:\n` +
+    `- ${trainingSuggestion}`;
 }
 
 // ----------------------
