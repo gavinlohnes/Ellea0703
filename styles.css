@@ -363,3 +363,182 @@ body::before{
     grid-template-columns:1fr;
   }
 }
+/* ═══════════════════════════════════════
+   TYPO / MICRO POLISH
+═══════════════════════════════════════ */
+.card-title{
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.meal-name{
+  font-size:13px;
+}
+
+.macro{
+  display:block;
+  margin-top:2px;
+}
+
+/* ═══════════════════════════════════════
+   BUTTON DEPTH / FEEDBACK
+═══════════════════════════════════════ */
+.btn{
+  border-radius:4px;
+}
+
+.btn:hover{
+  filter:brightness(1.15);
+  box-shadow:0 0 10px rgba(224,26,26,0.15);
+}
+
+.btn:active{
+  transform:scale(0.97);
+  filter:brightness(0.9);
+}
+
+.btn.primary{
+  box-shadow:0 0 12px rgba(224,26,26,0.25);
+}
+
+/* ═══════════════════════════════════════
+   NAV ACTIVE DEPTH
+═══════════════════════════════════════ */
+.nav-tab.on{
+  position:relative;
+}
+
+.nav-tab.on::after{
+  content:'';
+  position:absolute;
+  bottom:0;
+  left:10px;
+  right:10px;
+  height:2px;
+  background:var(--red2);
+  box-shadow:0 0 8px var(--red-glow);
+}
+
+/* ═══════════════════════════════════════
+   STAT CELL HIERARCHY
+═══════════════════════════════════════ */
+.stat-cell{
+  transition:.15s ease;
+}
+
+.stat-cell:hover{
+  border-color:var(--red);
+  transform:translateY(-1px);
+}
+
+/* ═══════════════════════════════════════
+   PILLS VISUAL WEIGHT
+═══════════════════════════════════════ */
+.pill{
+  display:inline-block;
+  border-radius:3px;
+}
+
+.pill-readiness{
+  background:rgba(31,219,106,0.08);
+}
+
+.pill-mode{
+  background:rgba(240,184,48,0.08);
+}
+
+/* ═══════════════════════════════════════
+   HYDRATION VISUAL IMPROVEMENT
+═══════════════════════════════════════ */
+.hydration-bar{
+  border-radius:3px;
+  overflow:hidden;
+}
+
+.hydration-fill{
+  box-shadow:0 0 10px rgba(255,45,45,0.25);
+}
+
+/* ═══════════════════════════════════════
+   MEAL CARDS DEPTH
+═══════════════════════════════════════ */
+.meal-card{
+  border-radius:6px;
+  transition:.15s ease;
+}
+
+.meal-card:hover{
+  border-color:var(--red2);
+  box-shadow:0 0 10px rgba(224,26,26,0.12);
+}
+
+/* ═══════════════════════════════════════
+   CHIP INTERACTION
+═══════════════════════════════════════ */
+.chip{
+  border-radius:3px;
+  transition:.15s;
+}
+
+.chip:hover{
+  border-color:var(--red2);
+  color:var(--red2);
+}
+
+/* ═══════════════════════════════════════
+   INPUT FOCUS SYSTEM
+═══════════════════════════════════════ */
+.mi:focus{
+  outline:none;
+  border-color:var(--red2);
+  box-shadow:0 0 6px rgba(255,45,45,0.25);
+}
+
+/* ═══════════════════════════════════════
+   LOG BLOCK DEPTH
+═══════════════════════════════════════ */
+.log-block{
+  line-height:1.4;
+  color:var(--text2);
+}
+
+/* ═══════════════════════════════════════
+   MOBILE TIGHTENING
+═══════════════════════════════════════ */
+@media (max-width:500px){
+
+  .btn-row{
+    flex-wrap:wrap;
+  }
+
+  .quick-row{
+    flex-wrap:wrap;
+  }
+
+  .meal-grid{
+    grid-template-columns:1fr;
+  }
+
+  .hdr{
+    flex-direction:column;
+    gap:8px;
+  }
+}
+
+/* ═══════════════════════════════════════
+   FINAL BEYOND GLOW LAYER
+═══════════════════════════════════════ */
+.card{
+  position:relative;
+}
+
+.card::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:0;
+  width:2px;
+  height:100%;
+  background:linear-gradient(180deg,var(--red2),transparent);
+  opacity:.7;
+}
