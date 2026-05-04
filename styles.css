@@ -1,4 +1,4 @@
-/* styles.css */
+/* Global */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -9,138 +9,189 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #050509;
   color: #f5f5f5;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
-  padding: 24px;
+  padding: 16px;
 }
 
-#app {
+.app-shell {
   width: 100%;
-  max-width: 900px;
-  border: 1px solid #ff1f3d;
-  background: radial-gradient(circle at top, #151520 0, #050509 55%);
-  padding: 24px 24px 16px;
-  border-radius: 10px;
-  box-shadow: 0 0 24px rgba(255, 0, 60, 0.35);
+  max-width: 960px;
+  border: 1px solid #1a1a1f;
+  background: radial-gradient(circle at top, #15151f 0, #050509 55%);
+  box-shadow: 0 0 40px rgba(255, 0, 0, 0.15);
+  border-radius: 12px;
+  padding: 16px 16px 24px;
 }
 
-header {
-  border-bottom: 1px solid #ff1f3d33;
-  padding-bottom: 12px;
+/* Header */
+.app-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin-bottom: 16px;
+  border-bottom: 1px solid #2a2a33;
+  padding-bottom: 8px;
 }
 
-header h1 {
-  font-size: 1.6rem;
+.app-header h1 {
+  font-size: 1.4rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #ff1f3d;
+  color: #ff1a3d;
 }
 
-header h2 {
-  font-size: 0.9rem;
-  color: #c0c0c0;
-  margin-top: 4px;
+.app-tagline {
+  font-size: 0.8rem;
+  color: #a0a0b0;
 }
 
-main {
+/* Layout */
+.app-main {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-#controls {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.panel {
+  border-radius: 10px;
+  padding: 12px 12px 14px;
+  background: linear-gradient(135deg, #101018, #050509);
+  border: 1px solid #262632;
 }
 
-button {
-  background: #ff1f3d;
+.panel-title {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #e0e0ff;
+  margin-bottom: 10px;
+}
+
+/* Buttons */
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.btn {
+  border: 1px solid #ff1a3d;
+  background: #1a0b10;
   color: #f5f5f5;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
-  box-shadow: 0 0 10px rgba(255, 0, 60, 0.4);
 }
 
-button:hover {
-  background: #ff3b55;
+.btn.primary {
+  background: linear-gradient(135deg, #ff1a3d, #ff0040);
+  box-shadow: 0 0 12px rgba(255, 0, 64, 0.4);
+}
+
+.btn.small {
+  padding: 6px 10px;
+  font-size: 0.7rem;
+}
+
+.btn.ghost {
+  border-color: #444457;
+  background: transparent;
+  color: #c0c0d0;
+}
+
+.btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 14px rgba(255, 0, 60, 0.6);
+  box-shadow: 0 0 10px rgba(255, 0, 64, 0.35);
 }
 
-button:active {
+.btn:active {
   transform: translateY(0);
-  box-shadow: 0 0 6px rgba(255, 0, 60, 0.3);
+  box-shadow: none;
 }
 
-section {
-  border: 1px solid #ff1f3d33;
+/* Output */
+.output {
+  background: #050509;
   border-radius: 8px;
-  padding: 12px 14px;
-  background: #0b0b12;
+  border: 1px solid #262632;
+  padding: 10px;
+  font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  color: #e5e5ff;
+  min-height: 120px;
+  white-space: pre-wrap;
 }
 
-section h3 {
-  font-size: 0.95rem;
+/* Nutrition HUD */
+.panel-nutrition {
+  border-color: #ff1a3d55;
+}
+
+.nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.nutrition-block {
+  background: #080810;
+  border-radius: 8px;
+  padding: 8px;
+  border: 1px solid #262632;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nutrition-block .label {
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #ff1f3d;
-  margin-bottom: 8px;
+  color: #a0a0b5;
 }
 
-#outputPanel {
-  background: #050509;
-  border-radius: 6px;
-  padding: 10px;
-  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
-  font-size: 0.85rem;
-  color: #e5e5e5;
-  max-height: 260px;
-  overflow: auto;
+.nutrition-block .value {
+  font-size: 0.9rem;
+  color: #f5f5ff;
 }
 
-.bands-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
-}
-
-.band-card {
-  background: #050509;
-  border-radius: 6px;
-  padding: 8px 10px;
-  border: 1px solid #ff1f3d33;
-}
-
-.band-card h4 {
-  font-size: 0.85rem;
-  color: #ff6b82;
-  margin-bottom: 6px;
-}
-
-.band-card ul {
-  list-style: none;
-  font-size: 0.8rem;
-  color: #d0d0d0;
-}
-
-.band-card li + li {
-  margin-top: 2px;
-}
-
-footer {
-  margin-top: 14px;
-  border-top: 1px solid #ff1f3d33;
-  padding-top: 8px;
+.mode-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
   font-size: 0.75rem;
-  color: #808080;
-  display: flex;
-  justify-content: space-between;
+  border: 1px solid #ff1a3d;
+  background: #1a0b10;
+}
+
+.hint {
+  font-size: 0.7rem;
+  color: #8a8aa0;
+  margin-top: 4px;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .app-main {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .panel-training {
+    flex: 3;
+  }
+
+  .panel-nutrition {
+    flex: 2;
+  }
 }
