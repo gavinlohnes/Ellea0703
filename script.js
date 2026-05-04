@@ -1,4 +1,4 @@
-// BEYOND v1 – Training + Nutrition HUD (Phase 3)
+// BEYOND v1 – Training + Nutrition + Weekly (Phase 4)
 
 // ----------------------
 // TRAINING ENGINE
@@ -56,7 +56,7 @@ function renderOutput(dataset) {
 const TARGET_CALORIES = 2200;
 const TARGET_PROTEIN = 160;
 
-// Load anchors or default
+// Anchors (persistent)
 let anchors = JSON.parse(localStorage.getItem("anchors")) || {
   A: { name: "Anchor A", calories: 700, protein: 45 },
   B: { name: "Anchor B", calories: 700, protein: 45 }
@@ -81,6 +81,15 @@ function updateAnchorUI() {
   document.getElementById("anchorBProtein").textContent = `${anchors.B.protein} g protein`;
 }
 
+function computeMode() {
+  const calRatio = currentCalories / TARGET_CALORIES;
+  const proteinRatio = currentProtein / TARGET_PROTEIN;
+
+  if (calRatio <= 0.8 && proteinRatio >= 0.8) return "FAST";
+  if (calRatio >= 1.1 || proteinRatio <= 0.5) return "CHILL";
+  return "BALANCED";
+}
+
 function updateNutritionHUD() {
   const caloriesDisplay = document.getElementById("caloriesDisplay");
   const proteinDisplay = document.getElementById("proteinDisplay");
@@ -90,17 +99,7 @@ function updateNutritionHUD() {
   caloriesDisplay.textContent = `${currentCalories} / ${TARGET_CALORIES}`;
   proteinDisplay.textContent = `${currentProtein} / ${TARGET_PROTEIN} g`;
 
-  const calRatio = currentCalories / TARGET_CALORIES;
-  const proteinRatio = currentProtein / TARGET_PROTEIN;
-
-  let mode = "BALANCED";
-
-  if (calRatio <= 0.8 && proteinRatio >= 0.8) {
-    mode = "FAST";
-  } else if (calRatio >= 1.1 || proteinRatio <= 0.5) {
-    mode = "CHILL";
-  }
-
+  const mode = computeMode();
   modeDisplay.textContent = mode;
 
   const aMark = anchorALogged ? "☑" : "☐";
@@ -108,14 +107,14 @@ function updateNutritionHUD() {
   anchorStatus.textContent = `A: ${aMark}  B: ${bMark}`;
 }
 
-function logAnchor(anchor) {
-  const meal = anchors[anchor];
+function logAnchor(anchorKey) {
+  const meal = anchors[anchorKey];
 
-  if (anchor === "A" && !anchorALogged) {
+  if (anchorKey === "A" && !anchorALogged) {
     currentCalories += meal.calories;
     currentProtein += meal.protein;
     anchorALogged = true;
-  } else if (anchor === "B" && !anchorBLogged) {
+  } else if (anchorKey === "B" && !anchorBLogged) {
     currentCalories += meal.calories;
     currentProtein += meal.protein;
     anchorBLogged = true;
@@ -148,15 +147,93 @@ function editAnchor(anchorKey) {
   const name = prompt("Meal name:", meal.name);
   if (!name) return;
 
-  const calories = parseInt(prompt("Calories:", meal.calories));
+  const calories = parseInt(prompt("Calories:", meal.calories), 10);
   if (isNaN(calories)) return;
 
-  const protein = parseInt(prompt("Protein (g):", meal.protein));
+  const protein = parseInt(prompt("Protein (g):", meal.protein), 10);
   if (isNaN(protein)) return;
 
   anchors[anchorKey] = { name, calories, protein };
   saveAnchors();
   updateAnchorUI();
+}
+
+// ----------------------
+// WEEKLY NUTRITION – STATE
+// ----------------------
+
+let weekNutrition = JSON.parse(localStorage.getItem("weekNutrition")) || [];
+
+function saveWeekNutrition() {
+  localStorage.setItem("weekNutrition", JSON.stringify(weekNutrition));
+}
+
+function updateWeeklyUI() {
+  const weeklyCaloriesEl = document.getElementById("weeklyCalories");
+  const weeklyProteinEl = document.getElementById("weeklyProtein");
+  const weeklyAnchorsEl = document.getElementById("weeklyAnchors");
+  const weeklyModesEl = document.getElementById("weeklyModes");
+
+  if (!weekNutrition.length) {
+    weeklyCaloriesEl.textContent = "0";
+    weeklyProteinEl.textContent = "0 g";
+    weeklyAnchorsEl.textContent = "0%";
+    weeklyModesEl.textContent = "–";
+    return;
+  }
+
+  let totalCal = 0;
+  let totalProt = 0;
+  let totalAnchors = 0;
+  let totalPossibleAnchors = weekNutrition.length * 2;
+  const modeCounts = { FAST: 0, BALANCED: 0, CHILL: 0 };
+
+  weekNutrition.forEach(day => {
+    totalCal += day.calories;
+    totalProt += day.protein;
+    if (day.anchorA) totalAnchors += 1;
+    if (day.anchorB) totalAnchors += 1;
+    if (modeCounts[day.mode] !== undefined) {
+      modeCounts[day.mode] += 1;
+    }
+  });
+
+  const days = weekNutrition.length;
+  const avgCal = Math.round(totalCal / days);
+  const avgProt = Math.round(totalProt / days);
+  const adherence = Math.round((totalAnchors / totalPossibleAnchors) * 100);
+
+  weeklyCaloriesEl.textContent = `${avgCal}`;
+  weeklyProteinEl.textContent = `${avgProt} g`;
+  weeklyAnchorsEl.textContent = `${isNaN(adherence) ? 0 : adherence}%`;
+
+  const modeParts = [];
+  if (modeCounts.FAST) modeParts.push(`FAST ${modeCounts.FAST}`);
+  if (modeCounts.BALANCED) modeParts.push(`BAL ${modeCounts.BALANCED}`);
+  if (modeCounts.CHILL) modeParts.push(`CHILL ${modeCounts.CHILL}`);
+
+  weeklyModesEl.textContent = modeParts.length ? modeParts.join(" · ") : "–";
+}
+
+function closeDayAndLog() {
+  const mode = computeMode();
+
+  const entry = {
+    calories: currentCalories,
+    protein: currentProtein,
+    anchorA: anchorALogged,
+    anchorB: anchorBLogged,
+    mode
+  };
+
+  weekNutrition.push(entry);
+  if (weekNutrition.length > 7) {
+    weekNutrition = weekNutrition.slice(weekNutrition.length - 7);
+  }
+
+  saveWeekNutrition();
+  updateWeeklyUI();
+  resetNutrition();
 }
 
 // ----------------------
@@ -176,11 +253,17 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("quickAddCalories").addEventListener("click", quickAddCalories);
   document.getElementById("resetNutrition").addEventListener("click", resetNutrition);
 
-  // Edit buttons
   document.querySelectorAll(".edit-btn").forEach(btn => {
     btn.addEventListener("click", () => editAnchor(btn.dataset.anchor));
   });
 
+  // Weekly
+  const closeDayBtn = document.getElementById("closeDay");
+  if (closeDayBtn) {
+    closeDayBtn.addEventListener("click", closeDayAndLog);
+  }
+
   updateAnchorUI();
   updateNutritionHUD();
+  updateWeeklyUI();
 });
