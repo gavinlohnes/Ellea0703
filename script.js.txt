@@ -1,0 +1,79 @@
+const datasetA = {
+  label: "Dataset A",
+  sleepHours: 7.7,
+  sleepQuality: 4.3,
+  soreness: 2.5,
+  volume: 4300,
+  compliance: 0.95
+};
+
+const datasetB = {
+  label: "Dataset B",
+  sleepHours: 5.7,
+  sleepQuality: 2.5,
+  soreness: 6.5,
+  volume: 6300,
+  compliance: 0.9
+};
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function computeFatigue(input) {
+  const soreness = input.soreness * 10;
+  const sleepPenalty = (8 - input.sleepHours) * 12;
+  const volume = (input.volume / 7000) * 100;
+
+  return clamp((soreness + sleepPenalty + volume) / 3, 0, 100);
+}
+
+function computeRecovery(input, fatigue) {
+  return clamp(100 - fatigue * 0.7 + input.compliance * 20, 0, 100);
+}
+
+function computeLoad(input) {
+  return clamp((input.volume / 7000) * 100, 0, 100);
+}
+
+function getState(fatigue, recovery, load) {
+  if (fatigue > 70 && load > 80) return "OVERLOAD";
+  if (recovery > 65 && fatigue < 60) return "ACTIVE";
+  return "RECOVERY";
+}
+
+function run(dataset) {
+  const fatigue = computeFatigue(dataset);
+  const recovery = computeRecovery(dataset, fatigue);
+  const load = computeLoad(dataset);
+  const state = getState(fatigue, recovery, load);
+
+  return {
+    fatigueScore: fatigue.toFixed(1),
+    recoveryScore: recovery.toFixed(1),
+    trainingLoadIndex: load.toFixed(1),
+    performanceDelta: (recovery - fatigue).toFixed(1),
+    coreMarkState: state
+  };
+}
+
+function print(label, r) {
+  return `
+${label}
+fatigueScore: ${r.fatigueScore}
+recoveryScore: ${r.recoveryScore}
+trainingLoadIndex: ${r.trainingLoadIndex}
+performanceDelta: ${r.performanceDelta}
+coreMarkState: ${r.coreMarkState}
+`;
+}
+
+document.getElementById("runDatasetA").onclick = () => {
+  document.getElementById("outputPanel").textContent =
+    print("Dataset A", run(datasetA));
+};
+
+document.getElementById("runDatasetB").onclick = () => {
+  document.getElementById("outputPanel").textContent =
+    print("Dataset B", run(datasetB));
+};
