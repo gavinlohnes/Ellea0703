@@ -2,13 +2,23 @@
    BEYOND‑OS — MAIN APP UI
    ============================ */
 
+let currentScreen = "home";
+let state = {
+  booted: false,
+  memory: {
+    protocols: []
+  }
+};
+
 window.addEventListener("DOMContentLoaded", () => {
-  const state = {
-    booted: false,
-    memory: {
-      protocols: []
+  const nav = document.getElementById("nav");
+
+  nav.addEventListener("click", (e) => {
+    if (e.target.dataset.screen) {
+      currentScreen = e.target.dataset.screen;
+      renderUI(state);
     }
-  };
+  });
 
   // Boot system
   state.booted = true;
@@ -33,7 +43,6 @@ function runEngines(state) {
   if (window.predictiveEngine) predictiveEngine(state);
   if (window.adaptiveProtocolsEngine) adaptiveProtocolsEngine(state);
   if (window.protocolTuningEngine) protocolTuningEngine(state);
-  if (window.protocolInterruptionEngine) protocolInterruptionEngine(state);
   if (window.weeklyEngine) weeklyEngine(state);
 }
 
@@ -45,9 +54,50 @@ function renderUI(state) {
   const container = document.getElementById("app");
   if (!container) return;
 
-  container.innerHTML = `
-    <h1>BEYOND‑OS</h1>
+  let html = "";
+
+  if (currentScreen === "home") {
+    html = renderHome(state);
+  } else if (currentScreen === "system") {
+    html = renderSystem(state);
+  } else if (currentScreen === "protocols") {
+    html = renderProtocols(state);
+  } else if (currentScreen === "cycle") {
+    html = renderCycle(state);
+  }
+
+  container.innerHTML = html;
+}
+
+/* ============================
+   SCREENS
+   ============================ */
+
+function renderHome(state) {
+  return `
+    <h2>Home</h2>
     ${renderOSTelemetry(state)}
+  `;
+}
+
+function renderSystem(state) {
+  return `
+    <h2>System Status</h2>
+    ${renderOSTelemetry(state)}
+  `;
+}
+
+function renderProtocols(state) {
+  return `
+    <h2>Protocols</h2>
+    <p>No protocol UI yet.</p>
+  `;
+}
+
+function renderCycle(state) {
+  return `
+    <h2>Cycle</h2>
+    <p>Cycle UI coming soon.</p>
   `;
 }
 
