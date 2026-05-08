@@ -46,30 +46,3 @@ export const OS = {
     this.notify();
   },
 
-  /* ---------- Notify subscribers ---------- */
-  notify() {
-    for (const fn of this.listeners) fn(this.state);
-  },
-
-  /* ---------- Run all engines in order ---------- */
-  runEngines() {
-    if (!this.state.booted) return;
-
-    recoveryEngine(this.state);
-    fatigueEngine(this.state);
-    hydrationCurveEngine(this.state);
-    protocolsEngine(this.state);
-    protocolProgressEngine(this.state);
-    protocolInterruptionEngine(this.state);
-    adaptiveProtocolsEngine(this.state);
-    systemsEngine(this.state); // ALWAYS LAST
-  },
-
-  /* ---------- Get state ---------- */
-  getState() {
-    return this.state;
-  }
-};
-
-/* Boot the OS */
-OS.dispatch({ type: "BOOT" });
