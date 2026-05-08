@@ -1,3 +1,4 @@
+alert("JS loaded");
 /* BEYOND‑OS — SKELETON (PHASES 1–10)
    Core: state, actions, event bus, navigation, modals, renderer, boot.
 */
