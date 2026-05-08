@@ -8,6 +8,7 @@ window.onerror = (msg, url, line, col, error) => {
   `;
 };
 alert("JS loaded");
+console.log("JS is running");
 // rebuild 002
 //rebuild 007 
 /* BEYOND‑OS — SKELETON (PHASES 1–10)
