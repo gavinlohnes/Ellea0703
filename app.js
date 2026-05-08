@@ -763,4 +763,3 @@ alert("JS loaded");
     }
 
 })();
-    
