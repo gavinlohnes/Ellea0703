@@ -22,6 +22,29 @@
       letter-spacing: 1px;
     }
 
+    #nav {
+      display: flex;
+      justify-content: space-around;
+      background: #111;
+      padding: 10px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    #nav button {
+      background: #1a1a1a;
+      color: #ff003c;
+      border: 1px solid #333;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #nav button:hover {
+      background: #ff003c;
+      color: #000;
+    }
+
     #app {
       width: 90%;
       max-width: 600px;
@@ -58,6 +81,14 @@
 <body>
 
   <h1>BEYOND‑OS</h1>
+
+  <!-- Navigation -->
+  <nav id="nav">
+    <button data-screen="home">Home</button>
+    <button data-screen="system">System</button>
+    <button data-screen="protocols">Protocols</button>
+    <button data-screen="cycle">Cycle</button>
+  </nav>
 
   <!-- Main App Container -->
   <div id="app"></div>
