@@ -1,24 +1,3 @@
-console.log("TOP OF FILE REACHED");
-document.body.innerHTML = "<h1 style='color:yellow'>TOP OF FILE RAN</h1>";
-window.onerror = (msg, url, line, col, error) => {
-  document.body.innerHTML = `
-    <pre style="color:red; font-size:20px; padding:20px; white-space:pre-wrap;">
-      JS ERROR:
-      ${msg}
-      at ${url}:${line}:${col}
-    </pre>
-  `;
-};
-alert("JS loaded");
-console.log("JS is running");
-document.body.innerHTML = "<h1 style='color:red'>JS STARTED</h1>";
-// rebuild 002
-//rebuild 007 
-/* BEYOND‑OS — SKELETON (PHASES 1–10)
-   Core: state, actions, event bus, navigation, modals, renderer, boot.
-*/
-
-(function () {
 
     // -----------------------------
     // PHASE 1 — CORE CONTRACT
