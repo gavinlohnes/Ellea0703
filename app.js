@@ -1,7 +1,3 @@
-// =============================================
-// BEYOND-OS — Main JavaScript
-// =============================================
-
 // -----------------------------
 // PHASE 1 — CORE CONTRACT
 // -----------------------------
@@ -137,6 +133,48 @@ const Actions = (function (state, bus) {
     function pingSystem(systemKey) {
         state.appendLog({ type: "PING_SYSTEM", systemKey });
         bus.emit("SYSTEM_PING", { systemKey });
+        // Systems Engine Upgrade - Live Status Simulation
+        if (state.getState().systemStatus[systemKey] !== undefined) {
+            const statuses = ["idle", "active", "optimal", "warning"];
+            const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+            const patch = { systemStatus: { ...state.getState().systemStatus } };
+            patch.systemStatus[systemKey] = newStatus;
+            state.setState(patch, { type: "SYSTEM_UPDATE", system: systemKey });
+        }
+    }
+
+    // Today Mode Actions
+    function enterTodayMode() {
+        state.appendLog({ type: "TODAY_MODE_ENTER" });
+        bus.emit("TODAY_MODE_ENTERED", {});
+        openModal("today-mode");
+    }
+
+    function logQuickWin(title) {
+        state.appendLog({ type: "QUICK_WIN", title, impact: "positive" });
+        bus.emit("QUICK_WIN_LOGGED", { title });
+    }
+
+    // Protocol Engine Actions
+    function loadProtocol(name) {
+        state.appendLog({ type: "PROTOCOL_LOAD", protocol: name });
+        bus.emit("PROTOCOL_LOADED", { name });
+        openModal("protocol-view", { name });
+    }
+
+    function toggleRule(ruleId) {
+        state.appendLog({ type: "RULE_TOGGLE", ruleId });
+        bus.emit("RULE_TOGGLED", { ruleId });
+    }
+
+    // Log Intelligence Actions
+    function analyzeLog() {
+        state.appendLog({ type: "LOG_ANALYSIS_REQUEST" });
+        bus.emit("LOG_ANALYSIS_STARTED", {});
+        // Simulate intelligence
+        setTimeout(() => {
+            openModal("log-intelligence");
+        }, 420);
     }
 
     return {
@@ -144,6 +182,11 @@ const Actions = (function (state, bus) {
         openModal,
         closeModal,
         pingSystem,
+        enterTodayMode,
+        logQuickWin,
+        loadProtocol,
+        toggleRule,
+        analyzeLog,
     };
 })(State, EventBus);
 
@@ -156,9 +199,14 @@ const Navigation = (function (actions) {
         { id: "protocol", label: "PROTOCOL" },
         { id: "systems", label: "SYSTEMS" },
         { id: "log", label: "LOG" },
+        { id: "today", label: "TODAY" },
     ];
 
     function goTo(id) {
+        if (id === "today") {
+            actions.enterTodayMode();
+            return;
+        }
         actions.navigate(id);
     }
 
@@ -180,6 +228,18 @@ const Modals = (function (actions) {
                 title: "BEYOND‑OS",
                 body: "Tactical personal OS skeleton. Built for Gavin.",
             },
+            "today-mode": {
+                title: "TODAY MODE",
+                body: "Focus window active. What is your primary objective for this cycle?",
+            },
+            "protocol-view": {
+                title: "ACTIVE PROTOCOL",
+                body: "Discipline is the bridge between goals and accomplishment.",
+            },
+            "log-intelligence": {
+                title: "LOG INTELLIGENCE",
+                body: "Pattern detected: Consistent execution in morning systems. Momentum building.",
+            }
         };
         return defs[id] || null;
     }
@@ -188,8 +248,96 @@ const Modals = (function (actions) {
         actions.openModal("about-os");
     }
 
-    return { getModalDefinition, openAbout };
+    function openTodayMode() {
+        actions.openModal("today-mode");
+    }
+
+    return { 
+        getModalDefinition, 
+        openAbout,
+        openTodayMode 
+    };
 })(Actions);
+
+// -----------------------------
+// PHASE 9 — NEW MODULES
+// -----------------------------
+const Modules = (function (state, actions) {
+    
+    // Today Mode Engine
+    const TodayMode = {
+        init() {
+            console.log("%c[TODAY MODE] Tactical focus layer online", "color:#ff003c");
+        },
+        recordWin(title) {
+            actions.logQuickWin(title);
+        }
+    };
+
+    // Protocol Engine
+    const ProtocolEngine = {
+        protocols: {
+            "morning-protocol": ["Hydrate", "Movement", "Deep Work Block"],
+            "evening-protocol": ["Review", "Shutdown Ritual", "No Input"]
+        },
+        
+        activate(name) {
+            actions.loadProtocol(name);
+        },
+        
+        getActiveRules() {
+            return ["No social media before 10:00", "Minimum 3L water", "Training before 18:00"];
+        }
+    };
+
+    // Systems Engine Upgrades
+    const SystemsEngine = {
+        upgradeSystem(systemKey, newStatus) {
+            const current = state.getState().systemStatus;
+            const patch = { systemStatus: { ...current } };
+            patch.systemStatus[systemKey] = newStatus;
+            state.setState(patch, { type: "SYSTEM_UPGRADE" });
+            state.appendLog({ type: "SYSTEM_UPGRADE", system: systemKey, status: newStatus });
+        },
+        
+        getAllStatuses() {
+            return state.getState().systemStatus;
+        }
+    };
+
+    // Log Intelligence
+    const LogIntelligence = {
+        generateInsight() {
+            const log = state.getState().log;
+            if (log.length < 3) return "Insufficient data for analysis.";
+            
+            const recent = log.slice(-5);
+            const pingCount = recent.filter(e => e.type === "PING_SYSTEM").length;
+            
+            if (pingCount > 2) {
+                return "High system engagement detected. Execution rhythm strong.";
+            }
+            return "Consistent logging observed. Discipline compounding.";
+        },
+        
+        runAnalysis() {
+            actions.analyzeLog();
+        }
+    };
+
+    // Auto-initialize enhanced modules
+    setTimeout(() => {
+        TodayMode.init();
+        state.appendLog({ type: "MODULE_INIT", modules: ["TodayMode", "ProtocolEngine", "SystemsEngine", "LogIntelligence"] });
+    }, 800);
+
+    return {
+        TodayMode,
+        ProtocolEngine,
+        SystemsEngine,
+        LogIntelligence
+    };
+})(State, Actions);
 
 // -----------------------------
 // PHASE 8 — RENDERER
@@ -266,15 +414,20 @@ const Renderer = (function (state, nav, modals) {
 
     function renderScreen(id, state) {
         switch (id) {
-            case "home": return renderHome(state);
-            case "protocol": return renderProtocol(state);
-            case "systems": return renderSystems(state);
-            case "log": return renderLog(state);
-            default: return `<div class="os-panel">Unknown screen: ${id}</div>`;
+            case "home":
+                return renderHome(state);
+            case "protocol":
+                return renderProtocol(state);
+            case "systems":
+                return renderSystems(state);
+            case "log":
+                return renderLog(state);
+            default:
+                return `<div class="os-panel">Unknown screen: ${id}</div>`;
         }
     }
 
-    function renderHome() {
+    function renderHome(state) {
         return `
             <section class="os-panel">
                 <h1 class="os-title">WELCOME, ${OS_CONTRACT.owner.toUpperCase()}</h1>
@@ -284,26 +437,35 @@ const Renderer = (function (state, nav, modals) {
                 <div class="os-grid">
                     <div class="os-card">
                         <h2 class="os-card-title">Protocol</h2>
-                        <p class="os-card-text">Define your daily rules, constraints, and non‑negotiables.</p>
+                        <p class="os-card-text">
+                            Define your daily rules, constraints, and non‑negotiables.
+                        </p>
                     </div>
                     <div class="os-card">
                         <h2 class="os-card-title">Systems</h2>
-                        <p class="os-card-text">Hydration, nutrition, training — wired in as modules.</p>
+                        <p class="os-card-text">
+                            Hydration, nutrition, training, sleep — wired in as modules.
+                        </p>
                     </div>
                     <div class="os-card">
                         <h2 class="os-card-title">Log</h2>
-                        <p class="os-card-text">Every action, event, and decision captured.</p>
+                        <p class="os-card-text">
+                            Every action, event, and decision — captured for review.
+                        </p>
                     </div>
                 </div>
             </section>
         `;
     }
 
-    function renderProtocol() {
+    function renderProtocol(state) {
         return `
             <section class="os-panel">
                 <h1 class="os-title">PROTOCOL</h1>
-                <p class="os-text-muted">This is where your daily operating rules will live.</p>
+                <p class="os-text-muted">
+                    This is where your daily operating rules will live.
+                </p>
+                <button class="os-btn" data-action="load-protocol" data-protocol="morning-protocol">LOAD MORNING PROTOCOL</button>
             </section>
         `;
     }
@@ -313,15 +475,25 @@ const Renderer = (function (state, nav, modals) {
         return `
             <section class="os-panel">
                 <h1 class="os-title">SYSTEMS</h1>
-                <p class="os-text-muted">Core subsystems — ready to be wired into real engines.</p>
+                <p class="os-text-muted">
+                    Core subsystems — ready to be wired into real engines.
+                </p>
                 <div class="os-grid">
-                    ${Object.keys(sys).map(key => `
-                        <div class="os-card">
-                            <h2 class="os-card-title">${key.charAt(0).toUpperCase() + key.slice(1)}</h2>
-                            <p class="os-card-text">Status: ${sys[key]}</p>
-                            <button class="os-btn os-btn-outline" data-ping="${key}">PING</button>
-                        </div>
-                    `).join('')}
+                    <div class="os-card">
+                        <h2 class="os-card-title">Hydration</h2>
+                        <p class="os-card-text">Status: ${sys.hydration}</p>
+                        <button class="os-btn os-btn-outline" data-ping="hydration">PING</button>
+                    </div>
+                    <div class="os-card">
+                        <h2 class="os-card-title">Nutrition</h2>
+                        <p class="os-card-text">Status: ${sys.nutrition}</p>
+                        <button class="os-btn os-btn-outline" data-ping="nutrition">PING</button>
+                    </div>
+                    <div class="os-card">
+                        <h2 class="os-card-title">Training</h2>
+                        <p class="os-card-text">Status: ${sys.training}</p>
+                        <button class="os-btn os-btn-outline" data-ping="training">PING</button>
+                    </div>
                 </div>
             </section>
         `;
@@ -332,26 +504,38 @@ const Renderer = (function (state, nav, modals) {
         return `
             <section class="os-panel">
                 <h1 class="os-title">LOG</h1>
-                <p class="os-text-muted">Recent actions and events.</p>
+                <p class="os-text-muted">
+                    Recent actions and events.
+                </p>
+                <button class="os-btn os-btn-outline" data-action="analyze-log">RUN INTELLIGENCE</button>
                 <div class="os-log">
-                    ${entries.length === 0 
-                        ? `<div class="os-log-empty">No entries yet.</div>` 
-                        : entries.map(e => `
-                            <div class="os-log-entry">
-                                <div class="os-log-meta">
-                                    <span class="os-log-type">${e.type || "EVENT"}</span>
-                                    <span>${new Date(e.timestamp).toLocaleTimeString()}</span>
+                    ${
+                        entries.length === 0
+                            ? `<div class="os-log-empty">No entries yet.</div>`
+                            : entries
+                                  .map((e) => {
+                                      return `
+                                <div class="os-log-entry">
+                                    <div class="os-log-meta">
+                                        <span class="os-log-type">${e.type || "EVENT"}</span>
+                                        <span class="os-log-time">${e.timestamp}</span>
+                                    </div>
+                                    <pre class="os-log-body">${JSON.stringify(
+                                        e,
+                                        null,
+                                        2
+                                    )}</pre>
                                 </div>
-                                <pre class="os-log-body">${JSON.stringify(e, null, 2)}</pre>
-                            </div>
-                        `).join("")
+                            `;
+                                  })
+                                  .join("")
                     }
                 </div>
             </section>
         `;
     }
 
-    function renderFooter() {
+    function renderFooter(state) {
         return `
             <footer class="os-footer">
                 <span>BEYOND‑OS SKELETON</span>
@@ -367,7 +551,7 @@ const Renderer = (function (state, nav, modals) {
         if (!def) return "";
         return `
             <div class="os-modal-backdrop" data-action="close-modal">
-                <div class="os-modal">
+                <div class="os-modal" data-modal-root>
                     <h2 class="os-modal-title">${def.title}</h2>
                     <p class="os-modal-body">${def.body}</p>
                     <button class="os-btn" data-action="close-modal">CLOSE</button>
@@ -380,20 +564,49 @@ const Renderer = (function (state, nav, modals) {
         const root = document.getElementById("app");
         if (!root) return;
 
-        root.querySelectorAll("[data-nav]").forEach(el => {
-            el.addEventListener("click", () => Navigation.goTo(el.getAttribute("data-nav")));
+        root.querySelectorAll("[data-nav]").forEach((el) => {
+            el.addEventListener("click", () => {
+                const id = el.getAttribute("data-nav");
+                Navigation.goTo(id);
+            });
         });
 
-        root.querySelectorAll("[data-action='open-about']").forEach(el => {
-            el.addEventListener("click", Modals.openAbout);
+        root.querySelectorAll("[data-action='open-about']").forEach((el) => {
+            el.addEventListener("click", () => {
+                Modals.openAbout();
+            });
         });
 
-        root.querySelectorAll("[data-action='close-modal']").forEach(el => {
-            el.addEventListener("click", Actions.closeModal);
+        root.querySelectorAll("[data-action='close-modal']").forEach((el) => {
+            el.addEventListener("click", (e) => {
+                if (
+                    e.target.hasAttribute("data-action") ||
+                    e.target.hasAttribute("data-modal-root") === false
+                ) {
+                    Actions.closeModal();
+                }
+            });
         });
 
-        root.querySelectorAll("[data-ping]").forEach(el => {
-            el.addEventListener("click", () => Actions.pingSystem(el.getAttribute("data-ping")));
+        root.querySelectorAll("[data-ping]").forEach((el) => {
+            el.addEventListener("click", () => {
+                const key = el.getAttribute("data-ping");
+                Actions.pingSystem(key);
+            });
+        });
+
+        // New Phase 9 event bindings
+        root.querySelectorAll("[data-action='load-protocol']").forEach((el) => {
+            el.addEventListener("click", () => {
+                const protocol = el.getAttribute("data-protocol");
+                Actions.loadProtocol(protocol);
+            });
+        });
+
+        root.querySelectorAll("[data-action='analyze-log']").forEach((el) => {
+            el.addEventListener("click", () => {
+                Actions.analyzeLog();
+            });
         });
     }
 
@@ -404,16 +617,20 @@ const Renderer = (function (state, nav, modals) {
 // PHASE 10 — BOOT
 // -----------------------------
 function boot() {
-    console.log("%c[BEYOND‑OS] Booting v" + OS_CONTRACT.version, "color:#ff003c; font-weight:bold");
+    console.log("[BEYOND‑OS] Booting skeleton…", {
+        contract: OS_CONTRACT,
+        arch: ARCH,
+    });
 
     State.appendLog({ type: "BOOT", version: OS_CONTRACT.version });
 
-    State.onChange(() => Renderer.render());
+    State.onChange(() => {
+        Renderer.render();
+    });
 
     Renderer.render();
 }
 
-// Auto start
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
 } else {
