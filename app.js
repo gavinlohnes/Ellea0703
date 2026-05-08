@@ -630,26 +630,6 @@
     cursor: pointer;
 }
 
-.os-btn-ghost {
-    background: transparent;
-// -----------------------------
-// PHASE 9 — STYLE INJECTION
-// -----------------------------
-(function injectStyles() {
-    const theme = ARCH.theme;
-    const css = `
-        :root {
-            --os-bg: ${theme.background};
-            --os-accent: ${theme.accent};
-            --os-accent-soft: ${theme.accentSoft};
-            --os-text: ${theme.textPrimary};
-            --os-text-muted: ${theme.textMuted};
-            --os-panel: ${theme.panel};
-            --os-border: ${theme.border};
-        }
-
-        * { box-sizing: border-box; }
-
         body {
             margin: 0;
             background: var(--os-bg);
@@ -767,7 +747,7 @@
         }
 
         .os-card {
-            background: rgba(8,8,8,0.9);
+            background: rgba(8,8,8,0.7);
             border-radius: 8px;
             border: 1px solid var(--os-border);
             padding: 10px;
