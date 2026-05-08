@@ -1,1 +1,162 @@
+/* ============================
+   BEYOND‑OS — CORE THEME
+   ============================ */
+
+:root {
+  --bg: #000000;
+  --panel: #0d0d0d;
+  --card: #111111;
+  --accent: #ff1a1a;
+  --accent-soft: #ff4d4d;
+  --text: #e6e6e6;
+  --text-muted: #999999;
+  --border: #1a1a1a;
+  --radius: 8px;
+  --shadow: 0 0 12px rgba(255, 0, 0, 0.25);
+}
+
+/* ============================
+   GLOBAL RESET
+   ============================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  padding: 20px;
+}
+
+/* ============================
+   APP CONTAINER
+   ============================ */
+
+#app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ============================
+   PANELS
+   ============================ */
+
+.os-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.os-text-muted {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.os-text-soft {
+  color: var(--accent-soft);
+  font-size: 14px;
+}
+
+/* ============================
+   GRID LAYOUTS
+   ============================ */
+
+.os-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+/* ============================
+   CARDS
+   ============================ */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.card-body {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ============================
+   BUTTONS
+   ============================ */
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+button:hover {
+  background: var(--accent-soft);
+  box-shadow: var(--shadow);
+}
+
+/* ============================
+   INPUTS
+   ============================ */
+
+input, textarea {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: var(--radius);
+  color: var(--text);
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+
+input:focus, textarea:focus {
+  outline: 1px solid var(--accent);
+  box-shadow: var(--shadow);
+}
+
+/* ============================
+   SCANLINE EFFECT (SUBTLE)
+   ============================ */
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 0, 0, 0.03),
+    rgba(255, 0, 0, 0.03) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  opacity: 0.15;
+}
 
