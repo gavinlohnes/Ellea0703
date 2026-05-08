@@ -1,5 +1,5 @@
-/* BEYOND‑OS — FULL SKELETON (PHASES 1–12)
-   Single-file OS core: state, actions, navigation, renderer, modals, event bus.
+/* BEYOND‑OS — SKELETON (PHASES 1–10)
+   Core: state, actions, event bus, navigation, modals, renderer, boot.
 */
 
 (function () {
@@ -10,7 +10,7 @@
     const OS_CONTRACT = {
         name: "BEYOND‑OS",
         owner: "Gavin",
-        version: "0.1-skeleton",
+        version: "0.2-skeleton",
         rules: {
             allowDestructive: false,
             logActions: true,
@@ -23,890 +23,743 @@
     // PHASE 2 — ARCHITECTURE SPEC
     // -----------------------------
     const ARCH = {
-        screens: ["home", "hydration", "meals", "training", "cycle", "system"],
-        engines: ["hydrationEngine", "mealEngine", "trainingEngine", "cycleEngine", "readinessEngine"],
-        layers: ["state", "actions", "controllers", "renderer", "navigation", "modals", "persistence", "events"],
+        screens: ["home", "protocol", "systems", "log"],
+        defaultScreen: "home",
+        theme: {
+            name: "BatmanBeyond",
+            background: "#000000",
+            accent: "#ff003c",
+            accentSoft: "#ff4f7a",
+            textPrimary: "#ffffff",
+            textMuted: "#888888",
+            panel: "#080808",
+            border: "#1a1a1a",
+        },
     };
 
     // -----------------------------
     // PHASE 3 — STATE ENGINE
     // -----------------------------
-    const Store = (function () {
-        const initialState = {
-            ui: {
-                activeScreen: OS_CONTRACT.rules.defaultScreen,
-                modal: null,
-                lastAction: null,
-            },
-            hydration: {
-                targetOz: 80,
-                consumedOz: 32,
-                lastLog: null,
-            },
-            meals: {
-                todayMeals: 3,
-                preppedMeals: 5,
-                lastPrep: null,
-            },
-            training: {
-                microcycleDay: 2,
-                sessionPlanned: true,
-                lastCompleted: null,
-            },
-            readiness: {
-                score: 78,
-                status: "Operational",
-            },
-            cycle: {
-                phase: "Load",
-                dayInPhase: 3,
+    const State = (function () {
+        const _state = {
+            currentScreen: ARCH.defaultScreen,
+            modal: null,
+            log: [],
+            systemStatus: {
+                hydration: "idle",
+                nutrition: "idle",
+                training: "idle",
             },
         };
 
-        let state = structuredClone(initialState);
-        const listeners = new Set();
+        const listeners = [];
 
         function getState() {
-            return structuredClone(state);
+            return JSON.parse(JSON.stringify(_state));
         }
 
-        function setState(newState, meta = {}) {
-            state = { ...state, ...newState };
+        function setState(patch, meta = {}) {
+            const prev = getState();
+            Object.assign(_state, patch);
+            const next = getState();
             if (OS_CONTRACT.rules.logActions) {
-                console.log("[OS:STATE]", meta);
+                console.log("[OS:STATE] PATCH", { patch, meta, next });
             }
-            listeners.forEach((fn) => fn(state, meta));
+            listeners.forEach((fn) => fn(next, prev, meta));
         }
 
-        function update(path, value, meta = {}) {
-            const keys = path.split('.');
-            let current = state;
-            for (let i = 0; i < keys.length - 1; i++) {
-                current = current[keys[i]];
-            }
-            current[keys[keys.length - 1]] = value;
-            listeners.forEach((fn) => fn(state, meta));
+        function onChange(fn) {
+            listeners.push(fn);
+            return () => {
+                const idx = listeners.indexOf(fn);
+                if (idx >= 0) listeners.splice(idx, 1);
+            };
         }
 
-        function subscribe(fn) {
-            listeners.add(fn);
-            return () => listeners.delete(fn);
+        function appendLog(entry) {
+            const logEntry = {
+                timestamp: new Date().toISOString(),
+                ...entry,
+            };
+            _state.log.push(logEntry);
+            if (_state.log.length > 50) _state.log.shift();
+            if (OS_CONTRACT.rules.logEvents) {
+                console.log("[OS:LOG]", logEntry);
+            }
         }
 
         return {
             getState,
             setState,
-            update,
-            subscribe,
-            reset: () => {
-                state = structuredClone(initialState);
-                listeners.forEach((fn) => fn(state, { type: "RESET" }));
-            },
+            onChange,
+            appendLog,
         };
     })();
 
- // -----------------------------
-    // PHASE 4 — ACTION LAYER
     // -----------------------------
-    const Actions = (function (store) {
+    // PHASE 4 — EVENT BUS
+    // -----------------------------
+    const EventBus = (function () {
+        const handlers = {};
 
-        function logHydration(amountOz) {
-            const state = store.getState();
-            const newTotal = state.hydration.consumedOz + amountOz;
-
-            store.setState(
-                {
-                    hydration: {
-                        ...state.hydration,
-                        consumedOz: newTotal,
-                        lastLog: new Date().toISOString(),
-                    },
-                    ui: {
-                        ...state.ui,
-                        lastAction: `Logged ${amountOz}oz`,
-                    },
-                },
-                { type: "HYDRATION_LOG", payload: { amountOz } }
-            );
+        function on(event, handler) {
+            if (!handlers[event]) handlers[event] = [];
+            handlers[event].push(handler);
+            return () => {
+                handlers[event] = handlers[event].filter((h) => h !== handler);
+            };
         }
 
-        function logMeal() {
-            const state = store.getState();
-            store.setState(
-                {
-                    meals: {
-                        ...state.meals,
-                        todayMeals: state.meals.todayMeals + 1,
-                    },
-                    ui: {
-                        ...state.ui,
-                        lastAction: "Logged meal",
-                    },
-                },
-                { type: "MEAL_LOG" }
-            );
+        function emit(event, payload) {
+            if (OS_CONTRACT.rules.logEvents) {
+                console.log("[OS:EVENT]", event, payload || {});
+            }
+            (handlers[event] || []).forEach((h) => h(payload));
         }
 
-        function completeTrainingSession() {
-            const state = store.getState();
-            store.setState(
-                {
-                    training: {
-                        ...state.training,
-                        lastCompleted: new Date().toISOString(),
-                        sessionPlanned: false,
-                    },
-                    ui: {
-                        ...state.ui,
-                        lastAction: "Training complete",
-                    },
-                },
-                { type: "TRAINING_COMPLETE" }
-            );
+        return { on, emit };
+    })();
+
+    // -----------------------------
+    // PHASE 5 — ACTION LAYER
+    // -----------------------------
+    const Actions = (function (state, bus) {
+        function navigate(screen) {
+            if (!ARCH.screens.includes(screen)) {
+                console.warn("[OS:NAV] Invalid screen:", screen);
+                return;
+            }
+            state.setState({ currentScreen: screen }, { type: "NAVIGATE" });
+            state.appendLog({ type: "NAVIGATE", screen });
+            bus.emit("NAVIGATED", { screen });
         }
 
-        function advanceCycleDay() {
-            const state = store.getState();
-            store.setState(
-                {
-                    cycle: {
-                        ...state.cycle,
-                        dayInPhase: state.cycle.dayInPhase + 1,
-                    },
-                    ui: {
-                        ...state.ui,
-                        lastAction: "Cycle advanced",
-                    },
-                },
-                { type: "CYCLE_ADVANCE" }
-            );
+        function openModal(id, data = {}) {
+            state.setState({ modal: { id, data } }, { type: "OPEN_MODAL" });
+            state.appendLog({ type: "OPEN_MODAL", id });
+            bus.emit("MODAL_OPENED", { id, data });
         }
 
-        function recalcReadiness() {
-            const state = store.getState();
-            const delta = Math.floor(Math.random() * 7) - 3;
-            let score = state.readiness.score + delta;
-            score = Math.max(40, Math.min(95, score));
-            const status = score >= 80 ? "Prime" : score >= 65 ? "Operational" : "Conserve";
+        function closeModal() {
+            state.setState({ modal: null }, { type: "CLOSE_MODAL" });
+            state.appendLog({ type: "CLOSE_MODAL" });
+            bus.emit("MODAL_CLOSED", {});
+        }
 
-            store.setState(
-                {
-                    readiness: {
-                        ...state.readiness,
-                        score,
-                        status,
-                    },
-                    ui: {
-                        ...state.ui,
-                        lastAction: "Readiness recalculated",
-                    },
-                },
-                { type: "READINESS_RECALC" }
-            );
+        function pingSystem(systemKey) {
+            state.appendLog({ type: "PING_SYSTEM", systemKey });
+            bus.emit("SYSTEM_PING", { systemKey });
         }
 
         return {
-            logHydration,
-            logMeal,
-            completeTrainingSession,
-            advanceCycleDay,
-            recalcReadiness,
+            navigate,
+            openModal,
+            closeModal,
+            pingSystem,
         };
-    })(Store);
+    })(State, EventBus);
 
- // -----------------------------
-    // PHASE 5 — RENDERER
     // -----------------------------
-    const Renderer = (function (store) {
-        let rootEl = null;
+    // PHASE 6 — NAVIGATION MODEL
+    // -----------------------------
+    const Navigation = (function (actions) {
+        const items = [
+            { id: "home", label: "HOME" },
+            { id: "protocol", label: "PROTOCOL" },
+            { id: "systems", label: "SYSTEMS" },
+            { id: "log", label: "LOG" },
+        ];
 
-        function mount(rootId) {
-            rootEl = document.getElementById(rootId);
-            if (!rootEl) {
-                console.error("OS: root element not found:", rootId);
+        function goTo(id) {
+            actions.navigate(id);
+        }
+
+        function getItems() {
+            return items.slice();
+        }
+
+        return { goTo, getItems };
+    })(Actions);
+
+    // -----------------------------
+    // PHASE 7 — MODAL MODEL
+    // -----------------------------
+    const Modals = (function (actions) {
+        function getModalDefinition(id) {
+            if (!id) return null;
+            const defs = {
+                "about-os": {
+                    title: "BEYOND‑OS",
+                    body: "Tactical personal OS skeleton. Built for Gavin.",
+                },
+            };
+            return defs[id] || null;
+        }
+
+        function openAbout() {
+            actions.openModal("about-os");
+        }
+
+        return { getModalDefinition, openAbout };
+    })(Actions);
+
+    // -----------------------------
+    // PHASE 8 — RENDERER
+    // -----------------------------
+    const Renderer = (function (state, nav, modals) {
+        const theme = ARCH.theme;
+
+        function render() {
+            const root = document.getElementById("app");
+            if (!root) {
+                console.error("[OS:RENDER] #app not found");
                 return;
             }
-            store.subscribe(render);
-            render(store.getState(), { type: "INIT" });
-        }
 
-        function render(state) {
-            if (!rootEl) return;
-
-            const screen = state.ui.activeScreen;
-
-            rootEl.innerHTML = `
-                <div class="app-frame">
-                    ${renderStatusBar(state)}
-                    ${renderTopBar(state)}
-                    <div class="app-content">
-                        ${renderScreen(screen, state)}
+            const s = state.getState();
+            root.innerHTML = `
+                <div class="os-root">
+                    <div class="os-frame">
+                        ${renderHeader(s)}
+                        <div class="os-body">
+                            ${renderSidebar(s)}
+                            ${renderMain(s)}
+                        </div>
+                        ${renderFooter(s)}
+                        ${renderModal(s)}
                     </div>
-                    ${renderNav(screen)}
-                    ${state.ui.modal ? renderModal(state.ui.modal) : ""}
                 </div>
             `;
-
-            wireInteractions();
+            attachEvents();
         }
 
-        function renderStatusBar(state) {
-            const now = new Date();
-            const time = now.toTimeString().slice(0, 5);
+        function renderHeader(state) {
             return `
-                <div style="background:#000; color:#666; padding:8px 16px; font-size:0.9rem; display:flex; justify-content:space-between;">
-                    <div>\( {OS_CONTRACT.name} v \){OS_CONTRACT.version}</div>
-                    <div>${time}</div>
-                </div>
+                <header class="os-header">
+                    <div class="os-brand">
+                        <span class="os-brand-main">BEYOND‑OS</span>
+                        <span class="os-brand-sub">v${OS_CONTRACT.version}</span>
+                    </div>
+                    <div class="os-header-right">
+                        <button class="os-btn os-btn-ghost" data-action="open-about">
+                            ABOUT
+                        </button>
+                    </div>
+                </header>
             `;
         }
 
-        function renderTopBar(state) {
+        function renderSidebar(state) {
+            const items = nav.getItems();
             return `
-                <div style="padding:12px 16px; background:#111; border-bottom:1px solid #222;">
-                    <strong>${state.ui.activeScreen.toUpperCase()}</strong>
-                    \( {state.ui.lastAction ? `<small style="float:right; color:#666;"> \){state.ui.lastAction}</small>` : ''}
-                </div>
+                <nav class="os-sidebar">
+                    ${items
+                        .map((item) => {
+                            const active = item.id === state.currentScreen;
+                            return `
+                                <button
+                                    class="os-nav-item ${active ? "active" : ""}"
+                                    data-nav="${item.id}"
+                                >
+                                    <span class="os-nav-label">${item.label}</span>
+                                </button>
+                            `;
+                        })
+                        .join("")}
+                </nav>
             `;
         }
 
-        function renderScreen(screen, state) {
-            switch(screen) {
-                case "home": return renderHomeScreen(state);
-                case "hydration": return renderHydrationScreen(state);
-                case "meals": return renderMealsScreen(state);
-                case "training": return renderTrainingScreen(state);
-                case "cycle": return renderCycleScreen(state);
-                case "system": return renderSystemScreen(state);
-                default: return `<div>Screen not found: ${screen}</div>`;
+        function renderMain(state) {
+            return `
+                <main class="os-main">
+                    ${renderScreen(state.currentScreen, state)}
+                </main>
+            `;
+        }
+
+        function renderScreen(id, state) {
+            switch (id) {
+                case "home":
+                    return renderHome(state);
+                case "protocol":
+                    return renderProtocol(state);
+                case "systems":
+                    return renderSystems(state);
+                case "log":
+                    return renderLog(state);
+                default:
+                    return `<div class="os-panel">Unknown screen: ${id}</div>`;
             }
- }
+        }
 
-   function renderHomeScreen(state) {
-            const h = state.hydration;
-            const m = state.meals;
-            const t = state.training;
-            const r = state.readiness;
-            const c = state.cycle;
-
-            const hydrationPct = Math.round((h.consumedOz / h.targetOz) * 100);
-
+        function renderHome(state) {
             return `
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Readiness</div>
-                            <div class="card-subtitle">System snapshot</div>
+                <section class="os-panel">
+                    <h1 class="os-title">WELCOME, ${OS_CONTRACT.owner.toUpperCase()}</h1>
+                    <p class="os-text-muted">
+                        BEYOND‑OS skeleton is online. This is your tactical base layer.
+                    </p>
+                    <div class="os-grid">
+                        <div class="os-card">
+                            <h2 class="os-card-title">Protocol</h2>
+                            <p class="os-card-text">
+                                Define your daily rules, constraints, and non‑negotiables.
+                            </p>
                         </div>
-                        <div class="card-pill">${r.status}</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="grid-2">
-                            <div class="metric-block">
-                                <div class="metric-label">Readiness score</div>
-                                <div class="metric-value">${r.score}</div>
-                                <div class="metric-tag-row">
-                                    <span class="metric-tag">Status</span>
-                                    <span class="metric-status-ok">${r.status}</span>
-                                </div>
-                            </div>
-                            <div class="metric-block">
-                                <div class="metric-label">Cycle phase</div>
-                                <div class="metric-value">${c.phase}</div>
-                                <div class="metric-tag-row">
-                                    <span class="metric-tag">Day</span>
-                                    <span class="metric-status-warn">D${c.dayInPhase}</span>
-                                </div>
-                            </div>
+                        <div class="os-card">
+                            <h2 class="os-card-title">Systems</h2>
+                            <p class="os-card-text">
+                                Hydration, nutrition, training, sleep — wired in as modules.
+                            </p>
                         </div>
-
-                        <div class="btn-row" style="margin-top:10px;">
-                            <button class="btn btn-primary" data-action="recalc-readiness">Recalc readiness</button>
-                            <button class="btn btn-ghost" data-nav="cycle">Cycle view</button>
+                        <div class="os-card">
+                            <h2 class="os-card-title">Log</h2>
+                            <p class="os-card-text">
+                                Every action, event, and decision — captured for review.
+                            </p>
                         </div>
                     </div>
-                </div>
+                </section>
+            `;
+        }
 
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Hydration</div>
-                            <div class="card-subtitle">Today’s intake</div>
+        function renderProtocol(state) {
+            return `
+                <section class="os-panel">
+                    <h1 class="os-title">PROTOCOL</h1>
+                    <p class="os-text-muted">
+                        This is where your daily operating rules will live.
+                    </p>
+                    <p class="os-text-soft">
+                        Next step: we’ll wire in DailyProtocol from your advanced architecture.
+                    </p>
+                </section>
+            `;
+        }
+
+        function renderSystems(state) {
+            const sys = state.systemStatus;
+            return `
+                <section class="os-panel">
+                    <h1 class="os-title">SYSTEMS</h1>
+                    <p class="os-text-muted">
+                        Core subsystems — ready to be wired into real engines.
+                    </p>
+                    <div class="os-grid">
+                        <div class="os-card">
+                            <h2 class="os-card-title">Hydration</h2>
+                            <p class="os-card-text">Status: ${sys.hydration}</p>
+                            <button class="os-btn os-btn-outline" data-ping="hydration">
+                                PING
+                            </button>
                         </div>
-                        <div class="card-pill">${hydrationPct}%</div>
+                        <div class="os-card">
+                            <h2 class="os-card-title">Nutrition</h2>
+                            <p class="os-card-text">Status: ${sys.nutrition}</p>
+                            <button class="os-btn os-btn-outline" data-ping="nutrition">
+                                PING
+                            </button>
+                        </div>
+                        <div class="os-card">
+                            <h2 class="os-card-title">Training</h2>
+                            <p class="os-card-text">Status: ${sys.training}</p>
+                            <button class="os-btn os-btn-outline" data-ping="training">
+                                PING
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="grid-2">
-                            <div class="metric-block">
-                                <div class="metric-label">Consumed</div>
-                                <div class="metric-value">${h.consumedOz}oz</div>
-                                <div class="metric-tag-row">
-                                    <span class="metric-tag">Target</span>
-                                    <span class="metric-status-ok">${h.targetOz}oz</span>
-                                </div>
-                            </div>
-                            <div class="metric-block">
-                                <div class="metric-label">Meals logged</div>
-                                <div class="metric-value">${m.todayMeals}</div>
-                                <div class="metric-tag-row">
-                                    <span class="metric-tag">Prepped</span>
-                                    <span class="metric-status-ok">${m.preppedMeals}</span>
-                                </div>
-                            </div>
-                        </div>
+                </section>
+            `;
+        }
 
-                        <div class="btn-row">
-                            <button class="btn btn-primary" data-action="log-hydration-8">+8oz</button>
-                            <button class="btn btn-ghost" data-nav="hydration">Hydration view</button>
-                        </div>
+        function renderLog(state) {
+            const entries = state.log.slice().reverse();
+            return `
+                <section class="os-panel">
+                    <h1 class="os-title">LOG</h1>
+                    <p class="os-text-muted">
+                        Recent actions and events.
+                    </p>
+                    <div class="os-log">
+                        ${
+                            entries.length === 0
+                                ? `<div class="os-log-empty">No entries yet.</div>`
+                                : entries
+                                      .map((e) => {
+                                          return `
+                                    <div class="os-log-entry">
+                                        <div class="os-log-meta">
+                                            <span class="os-log-type">${e.type || "EVENT"}</span>
+                                            <span class="os-log-time">${e.timestamp}</span>
+                                        </div>
+                                        <pre class="os-log-body">${JSON.stringify(
+                                            e,
+                                            null,
+                                            2
+                                        )}</pre>
+                                    </div>
+                                `;
+                                      })
+                                      .join("")
+                        }
                     </div>
-                </div>
+                </section>
+            `;
+        }
 
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Training</div>
-                            <div class="card-subtitle">Microcycle</div>
-                        </div>
-                        <div class="card-pill">Day ${t.microcycleDay}</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="metric-block">
-                            <div class="metric-label">Session</div>
-                            <div class="metric-value">${t.sessionPlanned ? "Planned" : "Complete"}</div>
-                            <div class="metric-tag-row">
-                                <span class="metric-tag">Control</span>
-                                <span class="${t.sessionPlanned ? "metric-status-warn" : "metric-status-ok"}">
-                                    ${t.sessionPlanned ? "Pending" : "Done"}
-                                </span>
-                            </div>
-                        </div>
+        function renderFooter(state) {
+            return `
+                <footer class="os-footer">
+                    <span>BEYOND‑OS SKELETON</span>
+                    <span>${OS_CONTRACT.owner}</span>
+                </footer>
+            `;
+        }
 
-                        <div class="btn-row">
-                            <button class="btn btn-primary" data-action="complete-training">Mark complete</button>
-                            <button class="btn btn-ghost" data-nav="training">Training view</button>
-                        </div>
+        function renderModal(state) {
+            const modal = state.modal;
+            if (!modal) return "";
+            const def = modals.getModalDefinition(modal.id);
+            if (!def) return "";
+            return `
+                <div class="os-modal-backdrop" data-action="close-modal">
+                    <div class="os-modal" data-modal-root>
+                        <h2 class="os-modal-title">${def.title}</h2>
+                        <p class="os-modal-body">${def.body}</p>
+                        <button class="os-btn" data-action="close-modal">CLOSE</button>
                     </div>
                 </div>
             `;
+        }
+
+        function attachEvents() {
+            const root = document.getElementById("app");
+            if (!root) return;
+
+            root.querySelectorAll("[data-nav]").forEach((el) => {
+                el.addEventListener("click", () => {
+                    const id = el.getAttribute("data-nav");
+                    Navigation.goTo(id);
+                });
+            });
+
+            root.querySelectorAll("[data-action='open-about']").forEach((el) => {
+                el.addEventListener("click", () => {
+                    Modals.openAbout();
+                });
+            });
+
+            root.querySelectorAll("[data-action='close-modal']").forEach((el) => {
+                el.addEventListener("click", (e) => {
+                    if (
+                        e.target.hasAttribute("data-action") ||
+                        e.target.hasAttribute("data-modal-root") === false
+                    ) {
+                        Actions.closeModal();
+                    }
+                });
+            });
+
+            root.querySelectorAll("[data-ping]").forEach((el) => {
+                el.addEventListener("click", () => {
+                    const key = el.getAttribute("data-ping");
+                    Actions.pingSystem(key);
+                });
+            });
+        }
+
+        return { render };
+    })(State, Navigation, Modals);
+
+    // -----------------------------
+    // PHASE 9 — STYLE INJECTION
+    // -----------------------------
+    (function injectStyles() {
+        const theme = ARCH.theme;
+        const css = `
+            :root {
+                --os-bg: ${theme.background};
+                --os-accent: ${theme.accent};
+                --os-accent-soft: ${theme.accentSoft};
+                --os-text: ${theme.textPrimary};
+                --os-text-muted: ${theme.textMuted};
+                --os-panel: ${theme.panel};
+                --os-border: ${theme.border};
+            }
+            * { box-sizing: border-box; }
+            body {
+                margin: 0;
+                background: var(--os-bg);
+                color: var(--os-text);
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            }
+            .os-root {
+                min-height: 100vh;
+                display: flex;
+                align-items: stretch;
+                justify-content: center;
+                background: radial-gradient(circle at top, #1a000a 0, #000 55%);
+                color: var(--os-text);
+            }
+            .os-frame {
+                width: 100%;
+                max-width: 1200px;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                padding: 16px;
+                gap: 12px;
+            }
+            .os-header, .os-footer {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 8px 12px;
+                background: rgba(0,0,0,0.7);
+                border: 1px solid var(--os-border);
+                border-radius: 8px;
+            }
+            .os-brand-main {
+                font-weight: 700;
+                letter-spacing: 0.12em;
+                color: var(--os-accent);
+                font-size: 14px;
+            }
+            .os-brand-sub {
+                font-size: 11px;
+                color: var(--os-text-muted);
+                margin-left: 8px;
+            }
+            .os-body {
+                flex: 1;
+                display: grid;
+                grid-template-columns: 220px minmax(0, 1fr);
+                gap: 12px;
+            }
+            .os-sidebar {
+                background: rgba(0,0,0,0.7);
+                border: 1px solid var(--os-border);
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .os-nav-item {
+                width: 100%;
+                text-align: left;
+                padding: 8px 10px;
+                border-radius: 6px;
+                border: 1px solid transparent;
+                background: transparent;
+                color: var(--os-text-muted);
+                font-size: 12px;
+                letter-spacing: 0.12em;
+                cursor: pointer;
+                text-transform: uppercase;
+            }
+            .os-nav-item.active {
+                border-color: var(--os-accent);
+                background: linear-gradient(90deg, rgba(255,0,60,0.2), transparent);
+                color: var(--os-text);
+            }
+            .os-main {
+                background: rgba(0,0,0,0.7);
+                border: 1px solid var(--os-border);
+                border-radius: 8px;
+                padding: 12px;
+                overflow: auto;
+            }
+            .os-panel {
+                display: flex;
+                .os-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-function renderHydrationScreen(state) {
-            const h = state.hydration;
-            const pct = Math.round((h.consumedOz / h.targetOz) * 100);
+.os-title {
+    font-size: 18px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--os-accent-soft);
+}
 
-            return `
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Hydration engine</div>
-                            <div class="card-subtitle">Today’s protocol</div>
-                        </div>
-                        <div class="card-pill">${pct}%</div>
-                    </div>
+.os-text-muted {
+    font-size: 13px;
+    color: var(--os-text-muted);
+}
 
-                    <div class="card-body">
-                        <p class="text-muted">Hydration engine surface. Adaptive targets will live here.</p>
+.os-text-soft {
+    font-size: 13px;
+    color: var(--os-accent-soft);
+}
 
-                        <div class="grid-2" style="margin-top:8px;">
-                            <div class="metric-block">
-                                <div class="metric-label">Consumed</div>
-                                <div class="metric-value">${h.consumedOz}oz</div>
-                            </div>
+.os-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+}
 
-                            <div class="metric-block">
-                                <div class="metric-label">Target</div>
-                                <div class="metric-value">${h.targetOz}oz</div>
-                            </div>
-                        </div>
+.os-card {
+    background: rgba(8,8,8,0.9);
+    border-radius: 8px;
+    border: 1px solid var(--os-border);
+    padding: 10px;
+}
 
-                        <div class="btn-row" style="margin-top:10px;">
-                            <button class="btn btn-primary" data-action="log-hydration-8">+8oz</button>
-                            <button class="btn btn-ghost" data-nav="home">Back</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+.os-card-title {
+    font-size: 14px;
+    margin: 0 0 4px 0;
+    color: var(--os-accent);
+    letter-spacing: 0.12em;
+}
 
-        function renderMealsScreen(state) {
-            const m = state.meals;
+.os-card-text {
+    font-size: 12px;
+    color: var(--os-text-muted);
+}
 
-            return `
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Meal engine</div>
-                            <div class="card-subtitle">Prep + execution</div>
-                        </div>
-                        <div class="card-pill">${m.todayMeals} logged</div>
-                    </div>
+.os-btn {
+    border-radius: 999px;
+    border: 1px solid var(--os-accent);
+    background: var(--os-accent);
+    color: #000;
+    padding: 6px 14px;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
 
-                    <div class="card-body">
-                        <p class="text-muted">Meal engine surface. Anchor meals + prep cycles will live here.</p>
+.os-btn-ghost {
+    background: transparent;
+    color: var(--os-accent-soft);
+    border-color: var(--os-accent-soft);
+}
 
-                        <div class="grid-2" style="margin-top:8px;">
-                            <div class="metric-block">
-                                <div class="metric-label">Today</div>
-                                <div class="metric-value">${m.todayMeals}</div>
-                            </div>
+.os-btn-outline {
+    background: transparent;
+    color: var(--os-accent-soft);
+    border-color: var(--os-accent);
+}
 
-                            <div class="metric-block">
-                                <div class="metric-label">Prepped</div>
-                                <div class="metric-value">${m.preppedMeals}</div>
-                            </div>
-                        </div>
+.os-footer span {
+    font-size: 11px;
+    color: var(--os-text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
 
-                        <div class="btn-row" style="margin-top:10px;">
-                            <button class="btn btn-primary" data-action="log-meal">Log meal</button>
-                            <button class="btn btn-ghost" data-nav="home">Back</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+.os-log {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow: auto;
+}
 
-function renderTrainingScreen(state) {
-            const t = state.training;
+.os-log-entry {
+    border-radius: 6px;
+    border: 1px solid var(--os-border);
+    padding: 6px;
+    background: rgba(0,0,0,0.8);
+}
 
-            return `
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Training engine</div>
-                            <div class="card-subtitle">Microcycle control</div>
-                        </div>
-                        <div class="card-pill">Day ${t.microcycleDay}</div>
-                    </div>
+.os-log-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--os-text-muted);
+    margin-bottom: 4px;
+}
 
-                    <div class="card-body">
-                        <p class="text-muted">Training engine surface. Session templates + intensity logic will live here.</p>
+.os-log-type {
+    color: var(--os-accent-soft);
+}
 
-                        <div class="metric-block" style="margin-top:8px;">
-                            <div class="metric-label">Session</div>
-                            <div class="metric-value">${t.sessionPlanned ? "Planned" : "Complete"}</div>
-                        </div>
+.os-log-body {
+    font-size: 10px;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
 
-                        <div class="btn-row" style="margin-top:10px;">
-                            <button class="btn btn-primary" data-action="complete-training">Mark complete</button>
-                            <button class="btn btn-ghost" data-nav="home">Back</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+.os-log-empty {
+    font-size: 12px;
+    color: var(--os-text-muted);
+}
 
-        function renderCycleScreen(state) {
-            const c = state.cycle;
+.os-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
 
-            return `
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Cycle engine</div>
-                            <div class="card-subtitle">Macro / micro</div>
-                        </div>
-                        <div class="card-pill">${c.phase}</div>
-                    </div>
+.os-modal {
+    background: #050505;
+    border-radius: 10px;
+    border: 1px solid var(--os-accent);
+    padding: 16px;
+    max-width: 360px;
+    width: 90%;
+    box-shadow: 0 0 40px rgba(255,0,60,0.4);
+}
 
-                    <div class="card-body">
-                        <p class="text-muted">Cycle engine surface. Block planning + deload logic will live here.</p>
+.os-modal-title {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    color: var(--os-accent-soft);
+}
 
-                        <div class="metric-block" style="margin-top:8px;">
-                            <div class="metric-label">Day in phase</div>
-                            <div class="metric-value">D${c.dayInPhase}</div>
-                        </div>
+.os-modal-body {
+    font-size: 13px;
+    color: var(--os-text-muted);
+    margin: 0 0 12px 0;
+}
 
-                        <div class="btn-row" style="margin-top:10px;">
-                            <button class="btn btn-primary" data-action="advance-cycle">Advance day</button>
-                            <button class="btn btn-ghost" data-nav="home">Back</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-function renderSystemScreen(state) {
-            return `
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">System</div>
-                            <div class="card-subtitle">OS controls</div>
-                        </div>
-                        <div class="card-pill">v${OS_CONTRACT.version}</div>
-                    </div>
-
-                    <div class="card-body">
-                        <p class="text-muted">System controls and OS‑level actions.</p>
-
-                        <div class="btn-row" style="margin-top:10px;">
-                            <button class="btn btn-primary" data-modal="reset-confirm">Reset state</button>
-                            <button class="btn btn-ghost" data-nav="home">Back</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderNav(active) {
-            const tabs = [
-                { id: "home", label: "Home" },
-                { id: "hydration", label: "Hydration" },
-                { id: "meals", label: "Meals" },
-                { id: "training", label: "Training" },
-                { id: "cycle", label: "Cycle" },
-                { id: "system", label: "System" },
-            ];
-
-            return `
-                <div class="app-nav">
-                    ${tabs
-                        .map(
-                            (t) => `
-                        <button class="nav-btn \( {active === t.id ? "active" : ""}" data-nav=" \){t.id}">
-                            ${t.label}
-                        </button>
-                    `
-                        )
-                        .join("")}
-                </div>
-            `;
-        }
-
-        function renderModal(type) {
-            if (type === "reset-confirm") {
-                return `
-                    <div class="modal-overlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center;">
-                        <div class="modal" style="background:#111; padding:24px; border-radius:12px; max-width:320px;">
-                            <div class="modal-title" style="font-size:1.2rem; margin-bottom:12px;">Reset state?</div>
-                            <div class="modal-body" style="margin-bottom:20px;">This will restore all values to defaults.</div>
-                            <div class="modal-actions">
-                                <button class="btn btn-primary" data-action="confirm-reset">Confirm</button>
-                                <button class="btn btn-ghost" data-action="close-modal">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            return "";
-        }
-
-function wireInteractions() {
-            document.querySelectorAll("[data-nav]").forEach((el) => {
-                el.onclick = () => {
-                    Store.update("ui.activeScreen", el.dataset.nav, { type: "NAVIGATE" });
-                };
-            });
-
-            document.querySelectorAll("[data-action]").forEach((el) => {
-                el.onclick = () => {
-                    const action = el.dataset.action;
-
-                    if (action === "log-hydration-8") Actions.logHydration(8);
-                    if (action === "log-meal") Actions.logMeal();
-                    if (action === "complete-training") Actions.completeTrainingSession();
-                    if (action === "advance-cycle") Actions.advanceCycleDay();
-                    if (action === "recalc-readiness") Actions.recalcReadiness();
-
-                    if (action === "confirm-reset") {
-                        Store.reset();
-                        Store.update("ui.modal", null);
-                    }
-
-                    if (action === "close-modal") {
-                        Store.update("ui.modal", null);
-                    }
-                };
-            });
-
-            document.querySelectorAll("[data-modal]").forEach((el) => {
-                el.onclick = () => {
-                    Store.update("ui.modal", el.dataset.modal);
-                };
-            });
-        }
-
-        // -----------------------------
-        // PHASE 6 — PERSISTENCE
-        // -----------------------------
-        const Persistence = (function (store) {
-            const KEY = "BEYOND_OS_STATE";
-
-            function save() {
-                try {
-                    localStorage.setItem(KEY, JSON.stringify(store.getState()));
-                } catch (e) {
-                    console.warn("[OS:PERSIST] Save failed:", e);
-                }
-            }
-
-            function load() {
-                try {
-                    const raw = localStorage.getItem(KEY);
-                    if (!raw) return;
-                    const parsed = JSON.parse(raw);
-                    store.setState(parsed, { type: "PERSIST_LOAD" });
-                } catch (e) {
-                    console.warn("[OS:PERSIST] Load failed:", e);
-                }
-            }
-
-            function attachAutoSave() {
-                store.subscribe((state, meta) => {
-                    if (meta.type && meta.type !== "PERSIST_LOAD") save();
-                });
-            }
-
-            return { load, attachAutoSave };
-        })(Store);
-
+@media (max-width: 768px) {
+    .os-body {
+        grid-template-columns: 1fr;
+    }
+    .os-sidebar {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+    .os-nav-item {
+        flex: 1;
+        text-align: center;
+        white-space: nowrap;
+    }
+}
 // -----------------------------
-        // PHASE 7 — EVENT BUS
-        // -----------------------------
-        const EventBus = (function () {
-            const listeners = {};
+    // PHASE 10 — BOOT
+    // -----------------------------
+    function boot() {
+        console.log("[BEYOND‑OS] Booting skeleton…", {
+            contract: OS_CONTRACT,
+            arch: ARCH,
+        });
 
-            function on(event, handler) {
-                if (!listeners[event]) listeners[event] = new Set();
-                listeners[event].add(handler);
-                return () => listeners[event].delete(handler);
-            }
+        State.appendLog({ type: "BOOT", version: OS_CONTRACT.version });
 
-            function emit(event, payload) {
-                if (OS_CONTRACT.rules.logEvents) {
-                    console.log("[OS:EVENT]", event, payload || null);
-                }
-                (listeners[event] || []).forEach((fn) => fn(payload));
-            }
+        State.onChange(() => {
+            Renderer.render();
+        });
 
-            return { on, emit };
-        })();
+        Renderer.render();
+    }
 
-        // -----------------------------
-        // PHASE 8 — CONTROLLERS
-        // -----------------------------
-        const Controllers = (function (actions, bus) {
-            function init() {
-                bus.on("DAY_ROLLOVER", () => {
-                    actions.advanceCycleDay();
-                    actions.recalcReadiness();
-                });
-            }
-            return { init };
-        })(Actions, EventBus);
-
-        // -----------------------------
-        // PHASE 9 — MOTION
-        // -----------------------------
-        const Motion = (function () {
-            function bootPulse() {
-                console.log("[OS:MOTION] Boot sequence nominal.");
-            }
-            return { bootPulse };
-        })();
-
-        // -----------------------------
-        // PHASE 10 — BOOT SEQUENCE
-        // -----------------------------
-        function boot() {
-            console.log(`[\( {OS_CONTRACT.name}] Booting skeleton v \){OS_CONTRACT.version}…`);
-
-            Persistence.load();
-            Persistence.attachAutoSave();
-            Controllers.init();
-            Motion.bootPulse();
-
-            Renderer.mount("app-root");
-        }
-
+    if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", boot);
-
-    })();
-
-// =============================================================================
-    // NEW PHASES — EXPANSION (13–20)
-    // =============================================================================
-
-    // -----------------------------
-    // PHASE 13 — NOTIFICATIONS ENGINE
-    // -----------------------------
-    const Notifications = (function (store, bus) {
-        let notifications = [];
-
-        function addNotification(title, message, type = "info", timeout = 4000) {
-            const note = {
-                id: Date.now(),
-                title,
-                message,
-                type,
-                timestamp: new Date().toISOString()
-            };
-            notifications.unshift(note);
-            if (notifications.length > 8) notifications.pop();
-
-            bus.emit("NOTIFICATION_ADDED", note);
-
-            if (timeout) {
-                setTimeout(() => dismissNotification(note.id), timeout);
-            }
-            console.log(`[OS:NOTIF] ${title}: ${message}`);
-        }
-
-        function dismissNotification(id) {
-            notifications = notifications.filter(n => n.id !== id);
-            bus.emit("NOTIFICATION_DISMISSED", id);
-        }
-
-        function getNotifications() {
-            return notifications;
-        }
-
-        return { addNotification, dismissNotification, getNotifications };
-    })(Store, EventBus);
-
-// -----------------------------
-    // PHASE 14 — DAILY PROTOCOL ENGINE
-    // -----------------------------
-    const DailyProtocol = (function (store) {
-        function getTodaysProtocol() {
-            const state = store.getState();
-            return {
-                hydrationTarget: state.hydration.targetOz,
-                mealsTarget: 4,
-                trainingComplete: !state.training.sessionPlanned,
-                readiness: state.readiness.score,
-                streak: 7 // placeholder
-            };
-        }
-
-        function checkCompliance() {
-            const protocol = getTodaysProtocol();
-            const compliant = protocol.hydrationTarget > 60 && protocol.mealsTarget > 3 && protocol.trainingComplete;
-            if (compliant) {
-                Notifications.addNotification("Daily Protocol", "All systems aligned ✓", "success");
-            }
-            return compliant;
-        }
-
-        return { getTodaysProtocol, checkCompliance };
-    })(Store);
-
-    // -----------------------------
-    // PHASE 15 — WEEKLY CYCLE PLANNER
-    // -----------------------------
-    const WeeklyPlanner = (function () {
-        function generateWeeklyOverview() {
-            return {
-                currentMicrocycle: 3,
-                focusBlock: "Hypertrophy",
-                deloadIn: 4,
-                projectedReadiness: 82,
-                keySessions: ["Push", "Pull", "Legs", "Active Recovery"]
-            };
-        }
-
-        return { generateWeeklyOverview };
-    })();
-
-    // -----------------------------
-    // PHASE 16 — OPERATOR ANALYTICS
-    // -----------------------------
-    const OperatorAnalytics = (function (store) {
-        function get7DayTrend() {
-            // Placeholder trend data
-            return {
-                avgReadiness: 76,
-                totalHydration: 612,
-                mealsLogged: 26,
-                sessionsCompleted: 5
-            };
-        }
-
-        function logOperatorMetric(key, value) {
-            console.log(`[OS:ANALYTICS] ${key} → ${value}`);
-            // Could extend state later
-        }
-
-        return { get7DayTrend, logOperatorMetric };
-    })(Store);
-
-// -----------------------------
-    // PHASE 17 — SYSTEM DIAGNOSTICS
-    // -----------------------------
-    const SystemDiagnostics = (function () {
-        function runDiagnostics() {
-            const diag = {
-                stateIntegrity: "NOMINAL",
-                persistence: localStorage.getItem("BEYOND_OS_STATE") ? "CONNECTED" : "OFFLINE",
-                eventBus: "ACTIVE",
-                renderer: "RENDERING",
-                timestamp: new Date().toISOString()
-            };
-            console.table(diag);
-            Notifications.addNotification("Diagnostics", "All cores nominal", "success");
-            return diag;
-        }
-
-        return { runDiagnostics };
-    })();
-
-    // -----------------------------
-    // PHASE 18 — OS TELEMETRY
-    // -----------------------------
-    const Telemetry = (function () {
-        function recordEvent(category, action) {
-            console.log(`[TELEMETRY] ${category} | ${action}`);
-        }
-
-        return { recordEvent };
-    })();
-
-    // -----------------------------
-    // PHASE 19 — OPERATOR MISSION LOG
-    // -----------------------------
-    const MissionLog = (function () {
-        let logEntries = [];
-
-        function addEntry(title, details) {
-            logEntries.push({
-                timestamp: new Date().toISOString(),
-                title,
-                details
-            });
-            if (logEntries.length > 20) logEntries.shift();
-        }
-
-        function getLog() {
-            return logEntries;
-        }
-
-        return { addEntry, getLog };
-    })();
-
-    // -----------------------------
-    // PHASE 20 — FUTURE‑PROOFING HOOKS
-    // -----------------------------
-    const FutureHooks = (function (bus) {
-        function registerPlugin(name, initFn) {
-            console.log(`[OS:PLUGIN] Registered → ${name}`);
-            initFn();
-        }
-
-        function onNextPhase(callback) {
-            bus.on("PHASE_ADVANCE", callback);
-        }
-
-        return { registerPlugin, onNextPhase };
-    })(EventBus);
-
-    // Extend boot sequence with new phases
-    const originalBoot = boot;
-    boot = function() {
-        originalBoot();
-        console.log("[BEYOND-OS] Phases 13–20 loaded.");
-        DailyProtocol.checkCompliance();
-        SystemDiagnostics.runDiagnostics();
-    };
+    } else {
+        boot();
+    }
 
 })();
+    
