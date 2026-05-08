@@ -1,43 +1,52 @@
 /* ============================
-   BEYOND‑OS — SYSTEMS ENGINE
+   BEYOND‑OS — SYSTEMS ENGINE (FIXED)
    ============================ */
 
 function systemsEngine(state) {
-  // Ensure OS boots only once
   if (!state.booted) return;
 
-  // Basic system heartbeat
-  updateSystemTimestamp(state);
-
-  // Auto‑resolve errors after a few cycles
-  resolveSystemErrors(state);
+  updateSystemHeartbeat(state);
+  updateSystemStatus(state);
 }
 
 /* ============================
-   SYSTEM TIMESTAMP
+   HEARTBEAT
    ============================ */
-
-function updateSystemTimestamp(state) {
-  const now = Date.now();
-  state.memory.lastUpdate = now;
+function updateSystemHeartbeat(state) {
+  state.memory.lastSystemUpdate = Date.now();
 }
 
 /* ============================
-   ERROR RESOLUTION
+   SYSTEM STATUS (NEW LOGIC)
    ============================ */
+function updateSystemStatus(state) {
+  const mem = state.memory;
 
-let errorCooldown = 0;
+  const fatigue = mem.fatigue ?? 0;
+  const hydration = mem.hydration ?? 5;
+  const load = mem.trainingLoad ?? 0;
 
-function resolveSystemErrors(state) {
-  if (!state.flags.error) return;
+  // Derived system-level metrics
+  mem.systemStatus = {
+    fatigueLevel: fatigue,
+    hydrationLevel: hydration,
+    loadLevel: load,
+    readiness: Math.max(0, 10 - fatigue),
+    stability: calculateStability(fatigue, hydration, load)
+  };
+}
 
-  errorCooldown++;
+/* ============================
+   STABILITY MODEL
+   ============================ */
+function calculateStability(fatigue, hydration, load) {
+  let score = 10;
 
-  // After 3 cycles, clear the error
-  if (errorCooldown >= 3) {
-    state.flags.error = null;
-    errorCooldown = 0;
-  }
+  if (fatigue >= 6) score -= 2;
+  if (hydration <= 3) score -= 2;
+  if (load >= 7) score -= 2;
+
+  return Math.max(1, score);
 }
 
 /* ============================
@@ -45,4 +54,3 @@ function resolveSystemErrors(state) {
    ============================ */
 
 window.systemsEngine = systemsEngine;
-
