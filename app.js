@@ -1,4 +1,5 @@
 console.log("TOP OF FILE REACHED");
+document.body.innerHTML = "<h1 style='color:yellow'>TOP OF FILE RAN</h1>";
 window.onerror = (msg, url, line, col, error) => {
   document.body.innerHTML = `
     <pre style="color:red; font-size:20px; padding:20px; white-space:pre-wrap;">
