@@ -753,31 +753,29 @@ alert("JS loaded");
 }
 `;
     const style = document.createElement("style");
-    style.textContent = css;
-    document.head.appendChild(style);
-})();
+style.textContent = css;
+document.head.appendChild(style);
+
 // -----------------------------
-    // PHASE 10 — BOOT
-    // -----------------------------
-    function boot() {
-        console.log("[BEYOND‑OS] Booting skeleton…", {
-            contract: OS_CONTRACT,
-            arch: ARCH,
-        });
+// PHASE 10 — BOOT
+// -----------------------------
+function boot() {
+    console.log("[BEYOND‑OS] Booting skeleton…", {
+        contract: OS_CONTRACT,
+        arch: ARCH,
+    });
 
-        State.appendLog({ type: "BOOT", version: OS_CONTRACT.version });
+    State.appendLog({ type: "BOOT", version: OS_CONTRACT.version });
 
-        State.onChange(() => {
-            Renderer.render();
-        });
-
+    State.onChange(() => {
         Renderer.render();
-    }
+    });
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", boot);
-    } else {
-        boot();
-    }
+    Renderer.render();
+}
 
-})();
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+} else {
+    boot();
+}
