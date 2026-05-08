@@ -2,34 +2,79 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BEYOND‑OS</title>
-  <link rel="stylesheet" href="css/style.css" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0d0d0d;
+      color: #e3e3e3;
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 20px;
+      color: #ff003c;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    #app {
+      width: 90%;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+    }
+
+    .os-telemetry {
+      margin-top: 20px;
+      padding: 15px;
+      background: #111;
+      border-radius: 8px;
+      border: 1px solid #333;
+    }
+
+    .os-telemetry div {
+      padding: 6px 0;
+      border-bottom: 1px solid #222;
+    }
+
+    .os-telemetry div:last-child {
+      border-bottom: none;
+    }
+
+    strong {
+      color: #ff003c;
+    }
+  </style>
 </head>
+
 <body>
+
+  <h1>BEYOND‑OS</h1>
+
+  <!-- Main App Container -->
   <div id="app"></div>
 
-  <script src="js/state.js"></script>
-  <script src="js/renderer.js"></script>
-  <script src="js/operatorLoop.js"></script>
+  <!-- Engines -->
+  <script src="js/drift.js"></script>
+  <script src="js/recovery.js"></script>
+  <script src="js/trainingLoad.js"></script>
+  <script src="js/fatigue.js"></script>
+  <script src="js/hydrationCurve.js"></script>
+  <script src="js/predictive.js"></script>
+  <script src="js/adaptiveProtocols.js"></script>
+  <script src="js/protocolTuning.js"></script>
+  <script src="js/weekly.js"></script>
 
-  <!-- engines -->
-  <script src="js/engines/systems.js"></script>
-  <script src="js/engines/tasks.js"></script>
-  <script src="js/engines/protocols.js"></script>
-  <script src="js/engines/protocolExpansion.js"></script>
-  <script src="js/engines/protocolProgress.js"></script>
-  <script src="js/engines/protocolInterruption.js"></script>
-  <script src="js/engines/adaptiveProtocols.js"></script>
-  <script src="js/engines/predictive.js"></script>
-  <script src="js/engines/drift.js"></script>
-  <script src="js/engines/recovery.js"></script>
-  <script src="js/engines/weekly.js"></script>
-  <script src="js/engines/dayPlanning.js"></script>
-  <script src="js/engines/fatigue.js"></script>
-  <script src="js/engines/hydrationCurve.js"></script>
-  <script src="js/engines/trainingLoad.js"></script>
-  <script src="js/engines/protocolTuning.js"></script>
-  <script src="js/engines/trends.js"></script>
-  <script src="js/engines/reports.js"></script>
+  <!-- Main App Logic -->
+  <script src="js/app.js"></script>
+
 </body>
 </html>
