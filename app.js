@@ -769,7 +769,7 @@ function boot() {
 
     State.onChange(() => {
         Renderer.render();
-    });
+    });   // ← THIS LINE WAS MISSING
 
     Renderer.render();
 }
