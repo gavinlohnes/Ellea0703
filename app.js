@@ -9,7 +9,7 @@ window.onerror = (msg, url, line, col, error) => {
 };
 alert("JS loaded");
 // rebuild 002
-//rebuild 007
+//rebuild 007 
 /* BEYOND‑OS — SKELETON (PHASES 1–10)
    Core: state, actions, event bus, navigation, modals, renderer, boot.
 */
