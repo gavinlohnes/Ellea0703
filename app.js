@@ -69,36 +69,7 @@
         function getState() {
             return state;
         }
-
-        function setState(partial, meta = {}) {
-            state = Object.freeze({
-                ...state,
-                ...partial,
-            });
-            if (OS_CONTRACT.rules.logActions && meta.type) {
-                console.log("[OS:STATE]", meta.type, meta.payload || null);
-            }
-            listeners.forEach((fn) => fn(state, meta));
-        }
-
-        function update(path, value, meta = {}) {
-            const segments = path.split(".");
-            const newState = { ...state };
-            let cursor = newState;
-            for (let i = 0; i < segments.length - 1; i++) {
-                const key = segments[i];
-                cursor[key] = { ...cursor[key] };
-                cursor = cursor[key];
-            }
-            cursor[segments[segments.length - 1]] = value;
-            state = Object.freeze(newState);
-            if (OS_CONTRACT.rules.logActions && meta.type) {
-                console.log("[OS:STATE]", meta.type, meta.payload || null);
-            }
-            listeners.forEach((fn) => fn(state, meta));
-        }
-
-        function subscribe(fn) {
+       function subscribe(fn) {
             listeners.add(fn);
             return () => listeners.delete(fn);
         }
@@ -114,6 +85,7 @@
             },
         };
     })();
+
     // -----------------------------
     // PHASE 4 — ACTION LAYER
     // -----------------------------
@@ -194,8 +166,8 @@
         function recalcReadiness() {
             const state = store.getState();
             const delta = Math.floor(Math.random() * 7) - 3;
-            let score = state.readiness.score + delta;
-            score = Math.max(40, Math.min(95, score));
+            let score = state.readiness.score
+           score = Math.max(40, Math.min(95, score));
             const status = score >= 80 ? "Prime" : score >= 65 ? "Operational" : "Conserve";
 
             store.setState(
@@ -222,9 +194,7 @@
             recalcReadiness,
         };
     })(Store);
-
-
-    // -----------------------------
+   // -----------------------------
     // PHASE 5 — RENDERER
     // -----------------------------
     const Renderer = (function (store) {
@@ -264,42 +234,7 @@
             const now = new Date();
             const time = now.toTimeString().slice(0, 5);
             return `
-                <div class="app-status-bar">
-                    <div class="app-status-bar-left">
-                        <div class="app-status-dot"></div>
-                        <span>${OS_CONTRACT.name}</span>
-                    </div>
-                    <div>${time}</div>
-                </div>
-            `;
-        }
-
-        function renderTopBar(state) {
-            return `
-                <div class="app-top-bar">
-                    <div class="app-title-block">
-                        <div class="app-title">BEYOND‑OS</div>
-                        <div class="app-subtitle">Operator: ${OS_CONTRACT.owner}</div>
-                    </div>
-                    <div class="app-badge">Skeleton • v0.1</div>
-                </div>
-            `;
-        }
-
-        function renderScreen(screen, state) {
-            switch (screen) {
-                case "home": return renderHomeScreen(state);
-                case "hydration": return renderHydrationScreen(state);
-                case "meals": return renderMealsScreen(state);
-                case "training": return renderTrainingScreen(state);
-                case "cycle": return renderCycleScreen(state);
-                case "system": return renderSystemScreen(state);
-                default:
-                    return `<div class="card"><div class="card-body">Unknown screen: ${screen}</div></div>`;
-            }
-        }
-
-        function renderHomeScreen(state) {
+            function renderHomeScreen(state) {
             const h = state.hydration;
             const m = state.meals;
             const t = state.training;
@@ -407,7 +342,6 @@
                 </div>
             `;
         }
-        }
 
         function renderHydrationScreen(state) {
             const h = state.hydration;
@@ -512,9 +446,9 @@
                     </div>
                 </div>
             `;
-        }
+                                   }
 
-        function renderCycleScreen(state) {
+                                   function renderCycleScreen(state) {
             const c = state.cycle;
 
             return `
@@ -549,19 +483,17 @@
                 <div class="card">
                     <div class="card-header">
                         <div>
-                            <div class="card-title">System layer</div>
-                            <div class="card-subtitle">OS skeleton</div>
+                            <div class="card-title">System</div>
+                            <div class="card-subtitle">OS controls</div>
                         </div>
-                        <div class="card-pill">Phases 1–12</div>
+                        <div class="card-pill">v${OS_CONTRACT.version}</div>
                     </div>
 
                     <div class="card-body">
-                        <p class="text-muted">
-                            Internal OS: state engine, actions, controllers, renderer, navigation, modals, persistence, event bus.
-                        </p>
+                        <p class="text-muted">System controls and OS‑level actions.</p>
 
                         <div class="btn-row" style="margin-top:10px;">
-                            <button class="btn btn-primary" data-action="open-modal" data-modal="reset-confirm">Reset state</button>
+                            <button class="btn btn-primary" data-modal="reset-confirm">Reset state</button>
                             <button class="btn btn-ghost" data-nav="home">Back</button>
                         </div>
                     </div>
@@ -571,10 +503,11 @@
 
         function renderNav(active) {
             const tabs = [
-                { id: "home", label: "HUD" },
+                { id: "home", label: "Home" },
                 { id: "hydration", label: "Hydration" },
                 { id: "meals", label: "Meals" },
                 { id: "training", label: "Training" },
+                { id: "cycle", label: "Cycle" },
                 { id: "system", label: "System" },
             ];
 
@@ -583,9 +516,9 @@
                     ${tabs
                         .map(
                             (t) => `
-                        <div class="nav-item ${active === t.id ? "nav-item-active" : ""}" data-nav="${t.id}">
+                        <button class="nav-btn ${active === t.id ? "active" : ""}" data-nav="${t.id}">
                             ${t.label}
-                        </div>
+                        </button>
                     `
                         )
                         .join("")}
@@ -593,241 +526,156 @@
             `;
         }
 
-        function renderModal(modal) {
-            if (!modal) return "";
-
-            if (modal.type === "reset-confirm") {
+        function renderModal(type) {
+            if (type === "reset-confirm") {
                 return `
-                    <div class="modal-backdrop" data-modal-dismiss>
-                        <div class="modal-panel" data-modal-panel>
-                            <div class="modal-title">Reset state</div>
-                            <div class="modal-body">
-                                This resets the OS skeleton to its initial state.
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-ghost" data-modal-dismiss>Cancel</button>
+                    <div class="modal-overlay">
+                        <div class="modal">
+                            <div class="modal-title">Reset state?</div>
+                            <div class="modal-body">This will restore all values to defaults.</div>
+                            <div class="modal-actions">
                                 <button class="btn btn-primary" data-action="confirm-reset">Confirm</button>
+                                <button class="btn btn-ghost" data-action="close-modal">Cancel</button>
                             </div>
                         </div>
                     </div>
                 `;
             }
-
             return "";
         }
 
         function wireInteractions() {
             document.querySelectorAll("[data-nav]").forEach((el) => {
-                el.addEventListener("click", () => {
-                    Navigation.goTo(el.getAttribute("data-nav"));
-                });
+                el.onclick = () => {
+                    Store.update("ui.activeScreen", el.dataset.nav, { type: "NAVIGATE" });
+                };
             });
 
             document.querySelectorAll("[data-action]").forEach((el) => {
-                el.addEventListener("click", (ev) => {
-                    const action = el.getAttribute("data-action");
-                    const modal = el.getAttribute("data-modal");
-                    handleAction(action, modal, ev);
-                });
-            });
+                el.onclick = () => {
+                    const action = el.dataset.action;
 
-            document.querySelectorAll("[data-modal-dismiss]").forEach((el) => {
-                el.addEventListener("click", (ev) => {
-                    if (ev.target.hasAttribute("data-modal-panel")) return;
-                    Modal.close();
-                });
-            });
-        }
+                    if (action === "log-hydration-8") Actions.logHydration(8);
+                    if (action === "log-meal") Actions.logMeal();
+                    if (action === "complete-training") Actions.completeTrainingSession();
+                    if (action === "advance-cycle") Actions.advanceCycleDay();
+                    if (action === "recalc-readiness") Actions.recalcReadiness();
 
-        function handleAction(action, modalId) {
-            switch (action) {
-                case "log-hydration-8": Actions.logHydration(8); break;
-                case "log-meal": Actions.logMeal(); break;
-                case "complete-training": Actions.completeTrainingSession(); break;
-                case "advance-cycle": Actions.advanceCycleDay(); break;
-                case "recalc-readiness": Actions.recalcReadiness(); break;
+                    if (action === "confirm-reset") {
+                        Store.reset();
+                        Store.update("ui.modal", null);
+                    }
 
-                case "open-modal":
-                    if (modalId === "reset-confirm") Modal.open({ type: "reset-confirm" });
-                    break;
-
-                case "confirm-reset":
-                    Store.reset();
-                    Modal.close();
-                    break;
-
-                default:
-                    console.log("[OS:ACTIONS] Unknown action:", action);
-            }
-        }
-
-        return { mount };
-    })(Store);
-
-
-    // -----------------------------
-    // PHASE 6 — NAVIGATION
-    // -----------------------------
-    const Navigation = (function (store) {
-        function goTo(screenId) {
-            const state = store.getState();
-
-            if (!ARCH.screens.includes(screenId)) {
-                console.warn("[OS:NAV] Unknown screen:", screenId);
-                return;
-            }
-
-            store.setState(
-                {
-                    ...state,
-                    ui: { ...state.ui, activeScreen: screenId },
-                },
-                { type: "NAVIGATE", payload: { screenId } }
-            );
-        }
-
-        return { goTo };
-    })(Store);
-
-
-    // -----------------------------
-    // PHASE 7 — MODAL SYSTEM
-    // -----------------------------
-    const Modal = (function (store) {
-        function open(modal) {
-            const state = store.getState();
-            store.setState(
-                { ...state, ui: { ...state.ui, modal } },
-                { type: "MODAL_OPEN", payload: modal }
-            );
-        }
-
-        function close() {
-            const state = store.getState();
-            store.setState(
-                { ...state, ui: { ...state.ui, modal: null } },
-                { type: "MODAL_CLOSE" }
-            );
-        }
-
-        return { open, close };
-    })(Store);
-
-
-    // -----------------------------
-    // PHASE 8 — PERSISTENCE
-    // -----------------------------
-    const Persistence = (function (store) {
-        const KEY = "BEYOND_OS_SKELETON_STATE";
-
-        function save() {
-            try {
-                const state = store.getState();
-                const payload = {
-                    hydration: state.hydration,
-                    meals: state.meals,
-                    training: state.training,
-                    readiness: state.readiness,
-                    cycle: state.cycle,
+                    if (action === "close-modal") {
+                        Store.update("ui.modal", null);
+                    }
                 };
-                localStorage.setItem(KEY, JSON.stringify(payload));
-            } catch (e) {
-                console.warn("[OS:PERSIST] Save failed:", e);
-            }
-        }
+            });
 
-        function load() {
-            try {
-                const raw = localStorage.getItem(KEY);
-                if (!raw) return;
-
-                const parsed = JSON.parse(raw);
-                const state = store.getState();
-
-                store.setState(
-                    { ...state, ...parsed },
-                    { type: "PERSIST_LOAD" }
-                );
-            } catch (e) {
-                console.warn("[OS:PERSIST] Load failed:", e);
-            }
-        }
-
-        function attachAutoSave() {
-            store.subscribe((state, meta) => {
-                if (meta.type && meta.type !== "PERSIST_LOAD") save();
+            document.querySelectorAll("[data-modal]").forEach((el) => {
+                el.onclick = () => {
+                    Store.update("ui.modal", el.dataset.modal);
+                };
             });
         }
 
-        return { load, attachAutoSave };
-    })(Store);
+        // -----------------------------
+        // PHASE 6 — PERSISTENCE
+        // -----------------------------
+        const Persistence = (function (store) {
+            const KEY = "BEYOND_OS_STATE";
 
-
-    // -----------------------------
-    // PHASE 9 — EVENT BUS
-    // -----------------------------
-    const EventBus = (function () {
-        const listeners = {};
-
-        function on(event, handler) {
-            if (!listeners[event]) listeners[event] = new Set();
-            listeners[event].add(handler);
-            return () => listeners[event].delete(handler);
-        }
-
-        function emit(event, payload) {
-            if (OS_CONTRACT.rules.logEvents) {
-                console.log("[OS:EVENT]", event, payload || null);
+            function save() {
+                try {
+                    localStorage.setItem(KEY, JSON.stringify(store.getState()));
+                } catch (e) {
+                    console.warn("[OS:PERSIST] Save failed:", e);
+                }
             }
-            (listeners[event] || []).forEach((fn) => fn(payload));
+
+            function load() {
+                try {
+                    const raw = localStorage.getItem(KEY);
+                    if (!raw) return;
+                    const parsed = JSON.parse(raw);
+                    store.setState(parsed, { type: "PERSIST_LOAD" });
+                } catch (e) {
+                    console.warn("[OS:PERSIST] Load failed:", e);
+                }
+            }
+
+            function attachAutoSave() {
+                store.subscribe((state, meta) => {
+                    if (meta.type && meta.type !== "PERSIST_LOAD") save();
+                });
+            }
+
+            return { load, attachAutoSave };
+        })(Store);
+
+        // -----------------------------
+        // PHASE 7 — EVENT BUS
+        // -----------------------------
+        const EventBus = (function () {
+            const listeners = {};
+
+            function on(event, handler) {
+                if (!listeners[event]) listeners[event] = new Set();
+                listeners[event].add(handler);
+                return () => listeners[event].delete(handler);
+            }
+
+            function emit(event, payload) {
+                if (OS_CONTRACT.rules.logEvents) {
+                    console.log("[OS:EVENT]", event, payload || null);
+                }
+                (listeners[event] || []).forEach((fn) => fn(payload));
+            }
+
+            return { on, emit };
+        })();
+
+        // -----------------------------
+        // PHASE 8 — CONTROLLERS
+        // -----------------------------
+        const Controllers = (function (actions, bus) {
+            function init() {
+                bus.on("DAY_ROLLOVER", () => {
+                    actions.advanceCycleDay();
+                    actions.recalcReadiness();
+                });
+            }
+            return { init };
+        })(Actions, EventBus);
+
+        // -----------------------------
+        // PHASE 9 — MOTION
+        // -----------------------------
+        const Motion = (function () {
+            function bootPulse() {
+                console.log("[OS:MOTION] Boot sequence nominal.");
+            }
+            return { bootPulse };
+        })();
+
+        // -----------------------------
+        // PHASE 10 — BOOT SEQUENCE
+        // -----------------------------
+        function boot() {
+            console.log(`[${OS_CONTRACT.name}] Booting skeleton v${OS_CONTRACT.version}…`);
+
+            Persistence.load();
+            Persistence.attachAutoSave();
+            Controllers.init();
+            Motion.bootPulse();
+
+            Renderer.mount("app-root");
         }
 
-        return { on, emit };
+        document.addEventListener("DOMContentLoaded", boot);
+
     })();
 
-
-    // -----------------------------
-    // PHASE 10 — CONTROLLERS
-    // -----------------------------
-    const Controllers = (function (actions, bus) {
-        function init() {
-            bus.on("DAY_ROLLOVER", () => {
-                actions.advanceCycleDay();
-                actions.recalcReadiness();
-            });
-        }
-
-        return { init };
-    })(Actions, EventBus);
-
-
-    // -----------------------------
-    // PHASE 11 — MICRO‑INTERACTIONS
-    // -----------------------------
-    const Motion = (function () {
-        function bootPulse() {
-            console.log("[OS:MOTION] Boot sequence nominal.");
-        }
-        return;
-        return { bootPulse };
-    })();
-
-
-    // -----------------------------
-    // PHASE 12 — SYSTEM BOOT
-    // -----------------------------
-    function boot() {
-        console.log(`[${OS_CONTRACT.name}] Booting skeleton v${OS_CONTRACT.version}…`);
-
-        Persistence.load();
-        Persistence.attachAutoSave();
-        Controllers.init();
-        Motion.bootPulse();
-
-        Renderer.mount("app-root");
-    }
-
-    document.addEventListener("DOMContentLoaded", boot);
-
-})();
         
+                                   
+                                   
