@@ -574,17 +574,15 @@ alert("JS loaded");
             }
             .os-panel {
                 display: flex;
-                .os-panel {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.os-title {
-    font-size: 18px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--os-accent-soft);
+.os-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .os-text-muted {
