@@ -9,6 +9,7 @@ window.onerror = (msg, url, line, col, error) => {
 };
 alert("JS loaded");
 console.log("JS is running");
+document.body.innerHTML = "<h1 style='color:red'>JS STARTED</h1>";
 // rebuild 002
 //rebuild 007 
 /* BEYOND‑OS — SKELETON (PHASES 1–10)
