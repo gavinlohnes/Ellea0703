@@ -1,3 +1,12 @@
+window.onerror = (msg, url, line, col, error) => {
+  document.body.innerHTML = `
+    <pre style="color:red; font-size:20px; padding:20px; white-space:pre-wrap;">
+      JS ERROR:
+      ${msg}
+      at ${url}:${line}:${col}
+    </pre>
+  `;
+};
 alert("JS loaded");
 // rebuild 002
 //rebuild 007
