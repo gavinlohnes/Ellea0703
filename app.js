@@ -880,27 +880,364 @@
                 text-align: center;
                 white-space: nowrap;
             }
+
+
+// -----------------------------
+// PHASE 9 — STYLE INJECTION
+// -----------------------------
+(function injectStyles() {
+    const theme = ARCH.theme;
+
+    const css = `
+        :root {
+            --os-bg: ${theme.background};
+            --os-accent: ${theme.accent};
+            --os-accent-soft: ${theme.accentSoft};
+            --os-text: ${theme.textPrimary};
+            --os-text-muted: ${theme.textMuted};
+            --os-panel: ${theme.panel};
+            --os-border: ${theme.border};
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--os-bg);
+            color: var(--os-text);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .os-root {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            background:
+                radial-gradient(circle at top, rgba(255,0,60,0.18), transparent 45%),
+                #000;
+        }
+
+        .os-frame {
+            width: 100%;
+            max-width: 1200px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            gap: 12px;
+        }
+
+        .os-header,
+        .os-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.72);
+            border: 1px solid var(--os-border);
+            border-radius: 10px;
+        }
+
+        .os-brand-main {
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            color: var(--os-accent);
+        }
+
+        .os-brand-sub {
+            font-size: 11px;
+            color: var(--os-text-muted);
+            margin-left: 8px;
+        }
+
+        .os-body {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 220px minmax(0, 1fr);
+            gap: 12px;
+        }
+
+        .os-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px;
+
+            background: rgba(0,0,0,0.72);
+            border: 1px solid var(--os-border);
+            border-radius: 10px;
+        }
+
+        .os-nav-item {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid transparent;
+
+            background: transparent;
+            color: var(--os-text-muted);
+
+            padding: 10px 12px;
+
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 12px;
+
+            cursor: pointer;
+            transition: 0.18s ease;
+        }
+
+        .os-nav-item:hover {
+            border-color: #2a2a2a;
+            color: var(--os-text);
+        }
+
+        .os-nav-item.active {
+            border-color: var(--os-accent);
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(255,0,60,0.18),
+                    transparent
+                );
+
+            color: var(--os-text);
+        }
+
+        .os-main {
+            overflow: auto;
+            padding: 14px;
+
+            background: rgba(0,0,0,0.72);
+            border: 1px solid var(--os-border);
+            border-radius: 10px;
+        }
+
+        .os-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .os-title {
+            margin: 0;
+            font-size: 26px;
+            letter-spacing: 0.08em;
+        }
+
+        .os-text-muted {
+            color: var(--os-text-muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .os-text-soft {
+            color: var(--os-accent-soft);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .os-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+
+        .os-card {
+            background: rgba(8,8,8,0.82);
+            border: 1px solid var(--os-border);
+            border-radius: 10px;
+
+            padding: 12px;
+
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .os-card-title {
+            margin: 0;
+            font-size: 14px;
+            letter-spacing: 0.12em;
+            color: var(--os-accent);
+        }
+
+        .os-card-text {
+            margin: 0;
+            font-size: 12px;
+            color: var(--os-text-muted);
+            line-height: 1.5;
+        }
+
+        .os-btn {
+            border-radius: 999px;
+            border: 1px solid var(--os-accent);
+
+            background: var(--os-accent);
+            color: #000;
+
+            padding: 7px 14px;
+
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+
+            cursor: pointer;
+        }
+
+        .os-btn-ghost {
+            background: transparent;
+            color: var(--os-accent-soft);
+            border-color: var(--os-accent-soft);
+        }
+
+        .os-btn-outline {
+            background: transparent;
+            color: var(--os-accent-soft);
+        }
+
+        .os-footer span {
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--os-text-muted);
+        }
+
+        .os-log {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+
+            max-height: 420px;
+            overflow: auto;
+        }
+
+        .os-log-entry {
+            background: rgba(0,0,0,0.84);
+            border: 1px solid var(--os-border);
+            border-radius: 8px;
+
+            padding: 8px;
+        }
+
+        .os-log-meta {
+            display: flex;
+            justify-content: space-between;
+
+            margin-bottom: 6px;
+
+            font-size: 10px;
+            color: var(--os-text-muted);
+        }
+
+        .os-log-type {
+            color: var(--os-accent-soft);
+        }
+
+        .os-log-body {
+            margin: 0;
+
+            white-space: pre-wrap;
+            word-break: break-word;
+
+            font-size: 10px;
+            color: #d0d0d0;
+        }
+
+        .os-log-empty {
+            font-size: 12px;
+            color: var(--os-text-muted);
+        }
+
+        .os-modal-backdrop {
+            position: fixed;
+            inset: 0;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+        }
+
+        .os-modal {
+            width: 90%;
+            max-width: 360px;
+
+            background: #050505;
+            border: 1px solid var(--os-accent);
+            border-radius: 12px;
+
+            padding: 18px;
+
+            box-shadow:
+                0 0 40px rgba(255,0,60,0.35);
+        }
+
+        .os-modal-title {
+            margin: 0 0 8px 0;
+
+            font-size: 16px;
+            color: var(--os-accent-soft);
+        }
+
+        .os-modal-body {
+            margin: 0 0 14px 0;
+
+            font-size: 13px;
+            line-height: 1.6;
+
+            color: var(--os-text-muted);
+        }
+
+        @media (max-width: 768px) {
+
+            .os-body {
+                grid-template-columns: 1fr;
+            }
+
+            .os-sidebar {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+
+            .os-nav-item {
+                flex: 1;
+                text-align: center;
+                white-space: nowrap;
+            }
         }
     `;
 
     const style = document.createElement("style");
     style.textContent = css;
+
     document.head.appendChild(style);
 })();
+
 // -----------------------------
 // PHASE 10 — BOOT
 // -----------------------------
 function boot() {
-    console.log("[BEYOND‑OS] Booting skeleton…", {
+
+    console.log("[BEYOND-OS] Booting skeleton…", {
         contract: OS_CONTRACT,
         arch: ARCH,
     });
 
-    State.appendLog({ type: "BOOT", version: OS_CONTRACT.version });
+    State.appendLog({
+        type: "BOOT",
+        version: OS_CONTRACT.version,
+    });
 
     State.onChange(() => {
         Renderer.render();
-    });   // ← THIS LINE WAS MISSING
+    });
 
     Renderer.render();
 }
@@ -910,3 +1247,4 @@ if (document.readyState === "loading") {
 } else {
     boot();
 }
+        
