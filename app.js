@@ -579,6 +579,10 @@ alert("JS loaded");
     gap: 12px;
 }
 
+(function injectStyles() {
+    const theme = ARCH.theme;
+    const css = `
+           
 .os-panel {
     display: flex;
     flex-direction: column;
@@ -736,6 +740,11 @@ alert("JS loaded");
         white-space: nowrap;
     }
 }
+`;
+    const style = document.createElement("style");
+    style.textContent = css;
+    document.head.appendChild(style);
+})();
 // -----------------------------
     // PHASE 10 — BOOT
     // -----------------------------
