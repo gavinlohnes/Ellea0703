@@ -1,0 +1,20 @@
+body {
+    margin: 0;
+    background: black;
+    color: #e60012; /* Batman Beyond red */
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+#boot-screen {
+    text-align: center;
+    animation: fadeIn 1.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
