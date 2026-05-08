@@ -108,6 +108,10 @@ const EventBus = (function () {
 // PHASE 5 — ACTION LAYER
 // -----------------------------
 const Actions = (function (state, bus) {
+
+    // -----------------------------
+    // CORE ACTIONS
+    // -----------------------------
     function navigate(screen) {
         if (!ARCH.screens.includes(screen)) {
             console.warn("[OS:NAV] Invalid screen:", screen);
@@ -133,7 +137,7 @@ const Actions = (function (state, bus) {
     function pingSystem(systemKey) {
         state.appendLog({ type: "PING_SYSTEM", systemKey });
         bus.emit("SYSTEM_PING", { systemKey });
-        // Systems Engine Upgrade - Live Status Simulation
+
         if (state.getState().systemStatus[systemKey] !== undefined) {
             const statuses = ["idle", "active", "optimal", "warning"];
             const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
@@ -143,7 +147,90 @@ const Actions = (function (state, bus) {
         }
     }
 
-    // Today Mode Actions
+    // -----------------------------
+    // TODAY MODE v2 ACTIONS
+    // -----------------------------
+    function setDailyObjective(objective) {
+        const today = { ...state.getState().today, objective };
+        state.setState({ today });
+        state.appendLog({ type: "DAILY_OBJECTIVE_SET", objective });
+    }
+
+    function recordWin(title) {
+        const today = state.getState().today;
+        const wins = [...(today.wins || []), { title, timestamp: new Date().toISOString() }];
+        state.setState({ today: { ...today, wins } });
+        state.appendLog({ type: "WIN_RECORDED", title });
+    }
+
+    function startCycle(minutes = 90) {
+        const now = Date.now();
+        const today = state.getState().today;
+        state.setState({
+            today: { ...today, cycleStart: now, cycleEnd: now + minutes * 60000 }
+        });
+        state.appendLog({ type: "FOCUS_CYCLE_STARTED", duration: minutes });
+    }
+
+    // -----------------------------
+    // PROTOCOL ENGINE v2 ACTIONS
+    // -----------------------------
+    function addRule(text, category = "general") {
+        const newRule = {
+            id: "rule-" + Date.now(),
+            category,
+            text,
+            active: true
+        };
+        const protocols = [...(state.getState().protocols || []), newRule];
+        state.setState({ protocols });
+        state.appendLog({ type: "RULE_ADDED", text, category });
+    }
+
+    function toggleRule(ruleId) {
+        const protocols = (state.getState().protocols || []).map(r =>
+            r.id === ruleId ? { ...r, active: !r.active } : r
+        );
+        state.setState({ protocols });
+        state.appendLog({ type: "RULE_TOGGLED", ruleId });
+    }
+
+    // -----------------------------
+    // SYSTEMS ENGINE v3 ACTIONS
+    // -----------------------------
+    function logHydration(amount) {
+        const hyd = state.getState().hydration || { current: 0, target: 3500 };
+        state.setState({ hydration: { ...hyd, current: hyd.current + amount } });
+        state.appendLog({ type: "HYDRATION_LOGGED", amount });
+    }
+
+    function calculateSystemScore() {
+        const s = state.getState();
+        let score = 0;
+
+        if ((s.hydration?.current || 0) >= (s.hydration?.target || 3500)) score += 40;
+        if ((s.today?.wins?.length || 0) >= 3) score += 30;
+        if (s.training?.length > 0) score += 30;
+
+        return Math.min(100, score);
+    }
+
+    // -----------------------------
+    // LOG INTELLIGENCE v2 ACTIONS
+    // -----------------------------
+    function generateDailySummary() {
+        state.appendLog({ type: "DAILY_SUMMARY_REQUEST" });
+        openModal("daily-summary");
+    }
+
+    function generateWeeklySummary() {
+    state.appendLog({ type: "WEEKLY_SUMMARY_REQUEST" });
+    openModal("weekly-summary");
+}
+
+    // -----------------------------
+    // EXISTING ACTIONS
+    // -----------------------------
     function enterTodayMode() {
         state.appendLog({ type: "TODAY_MODE_ENTER" });
         bus.emit("TODAY_MODE_ENTERED", {});
@@ -155,39 +242,51 @@ const Actions = (function (state, bus) {
         bus.emit("QUICK_WIN_LOGGED", { title });
     }
 
-    // Protocol Engine Actions
     function loadProtocol(name) {
         state.appendLog({ type: "PROTOCOL_LOAD", protocol: name });
         bus.emit("PROTOCOL_LOADED", { name });
         openModal("protocol-view", { name });
     }
 
-    function toggleRule(ruleId) {
-        state.appendLog({ type: "RULE_TOGGLE", ruleId });
-        bus.emit("RULE_TOGGLED", { ruleId });
-    }
-
-    // Log Intelligence Actions
     function analyzeLog() {
         state.appendLog({ type: "LOG_ANALYSIS_REQUEST" });
         bus.emit("LOG_ANALYSIS_STARTED", {});
-        // Simulate intelligence
-        setTimeout(() => {
-            openModal("log-intelligence");
-        }, 420);
+        setTimeout(() => openModal("log-intelligence"), 420);
     }
 
+    // -----------------------------
+    // ACTION EXPORT
+    // -----------------------------
     return {
         navigate,
         openModal,
         closeModal,
         pingSystem,
+
+        // Today Mode v2
+        setDailyObjective,
+        recordWin,
+        startCycle,
+
+        // Protocol Engine v2
+        addRule,
+        toggleRule,
+
+        // Systems Engine v3
+        logHydration,
+        calculateSystemScore,
+
+        // Log Intelligence v2
+        generateDailySummary,
+        generateWeeklySummary,
+
+        // Existing
         enterTodayMode,
         logQuickWin,
         loadProtocol,
-        toggleRule,
-        analyzeLog,
+        analyzeLog
     };
+
 })(State, EventBus);
 
 // -----------------------------
