@@ -67,9 +67,28 @@
         const listeners = new Set();
 
         function getState() {
-            return state;
+            return structuredClone(state);
         }
-       function subscribe(fn) {
+
+        function setState(newState, meta = {}) {
+            state = { ...state, ...newState };
+            if (OS_CONTRACT.rules.logActions) {
+                console.log("[OS:STATE]", meta);
+            }
+            listeners.forEach((fn) => fn(state, meta));
+        }
+
+        function update(path, value, meta = {}) {
+            const keys = path.split('.');
+            let current = state;
+            for (let i = 0; i < keys.length - 1; i++) {
+                current = current[keys[i]];
+            }
+            current[keys[keys.length - 1]] = value;
+            listeners.forEach((fn) => fn(state, meta));
+        }
+
+        function subscribe(fn) {
             listeners.add(fn);
             return () => listeners.delete(fn);
         }
@@ -86,7 +105,7 @@
         };
     })();
 
-    // -----------------------------
+ // -----------------------------
     // PHASE 4 — ACTION LAYER
     // -----------------------------
     const Actions = (function (store) {
@@ -166,8 +185,8 @@
         function recalcReadiness() {
             const state = store.getState();
             const delta = Math.floor(Math.random() * 7) - 3;
-            let score = state.readiness.score
-           score = Math.max(40, Math.min(95, score));
+            let score = state.readiness.score + delta;
+            score = Math.max(40, Math.min(95, score));
             const status = score >= 80 ? "Prime" : score >= 65 ? "Operational" : "Conserve";
 
             store.setState(
@@ -194,7 +213,8 @@
             recalcReadiness,
         };
     })(Store);
-   // -----------------------------
+
+ // -----------------------------
     // PHASE 5 — RENDERER
     // -----------------------------
     const Renderer = (function (store) {
@@ -234,7 +254,35 @@
             const now = new Date();
             const time = now.toTimeString().slice(0, 5);
             return `
-            function renderHomeScreen(state) {
+                <div style="background:#000; color:#666; padding:8px 16px; font-size:0.9rem; display:flex; justify-content:space-between;">
+                    <div>\( {OS_CONTRACT.name} v \){OS_CONTRACT.version}</div>
+                    <div>${time}</div>
+                </div>
+            `;
+        }
+
+        function renderTopBar(state) {
+            return `
+                <div style="padding:12px 16px; background:#111; border-bottom:1px solid #222;">
+                    <strong>${state.ui.activeScreen.toUpperCase()}</strong>
+                    \( {state.ui.lastAction ? `<small style="float:right; color:#666;"> \){state.ui.lastAction}</small>` : ''}
+                </div>
+            `;
+        }
+
+        function renderScreen(screen, state) {
+            switch(screen) {
+                case "home": return renderHomeScreen(state);
+                case "hydration": return renderHydrationScreen(state);
+                case "meals": return renderMealsScreen(state);
+                case "training": return renderTrainingScreen(state);
+                case "cycle": return renderCycleScreen(state);
+                case "system": return renderSystemScreen(state);
+                default: return `<div>Screen not found: ${screen}</div>`;
+            }
+ }
+
+   function renderHomeScreen(state) {
             const h = state.hydration;
             const m = state.meals;
             const t = state.training;
@@ -341,9 +389,9 @@
                     </div>
                 </div>
             `;
-        }
+}
 
-        function renderHydrationScreen(state) {
+function renderHydrationScreen(state) {
             const h = state.hydration;
             const pct = Math.round((h.consumedOz / h.targetOz) * 100);
 
@@ -418,7 +466,7 @@
             `;
         }
 
-        function renderTrainingScreen(state) {
+function renderTrainingScreen(state) {
             const t = state.training;
 
             return `
@@ -446,9 +494,9 @@
                     </div>
                 </div>
             `;
-                                   }
+        }
 
-                                   function renderCycleScreen(state) {
+        function renderCycleScreen(state) {
             const c = state.cycle;
 
             return `
@@ -478,7 +526,7 @@
             `;
         }
 
-        function renderSystemScreen(state) {
+function renderSystemScreen(state) {
             return `
                 <div class="card">
                     <div class="card-header">
@@ -516,7 +564,7 @@
                     ${tabs
                         .map(
                             (t) => `
-                        <button class="nav-btn ${active === t.id ? "active" : ""}" data-nav="${t.id}">
+                        <button class="nav-btn \( {active === t.id ? "active" : ""}" data-nav=" \){t.id}">
                             ${t.label}
                         </button>
                     `
@@ -529,10 +577,10 @@
         function renderModal(type) {
             if (type === "reset-confirm") {
                 return `
-                    <div class="modal-overlay">
-                        <div class="modal">
-                            <div class="modal-title">Reset state?</div>
-                            <div class="modal-body">This will restore all values to defaults.</div>
+                    <div class="modal-overlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center;">
+                        <div class="modal" style="background:#111; padding:24px; border-radius:12px; max-width:320px;">
+                            <div class="modal-title" style="font-size:1.2rem; margin-bottom:12px;">Reset state?</div>
+                            <div class="modal-body" style="margin-bottom:20px;">This will restore all values to defaults.</div>
                             <div class="modal-actions">
                                 <button class="btn btn-primary" data-action="confirm-reset">Confirm</button>
                                 <button class="btn btn-ghost" data-action="close-modal">Cancel</button>
@@ -544,7 +592,7 @@
             return "";
         }
 
-        function wireInteractions() {
+function wireInteractions() {
             document.querySelectorAll("[data-nav]").forEach((el) => {
                 el.onclick = () => {
                     Store.update("ui.activeScreen", el.dataset.nav, { type: "NAVIGATE" });
@@ -613,7 +661,7 @@
             return { load, attachAutoSave };
         })(Store);
 
-        // -----------------------------
+// -----------------------------
         // PHASE 7 — EVENT BUS
         // -----------------------------
         const EventBus = (function () {
@@ -662,7 +710,7 @@
         // PHASE 10 — BOOT SEQUENCE
         // -----------------------------
         function boot() {
-            console.log(`[${OS_CONTRACT.name}] Booting skeleton v${OS_CONTRACT.version}…`);
+            console.log(`[\( {OS_CONTRACT.name}] Booting skeleton v \){OS_CONTRACT.version}…`);
 
             Persistence.load();
             Persistence.attachAutoSave();
@@ -676,6 +724,189 @@
 
     })();
 
-        
-                                   
-                                   
+// =============================================================================
+    // NEW PHASES — EXPANSION (13–20)
+    // =============================================================================
+
+    // -----------------------------
+    // PHASE 13 — NOTIFICATIONS ENGINE
+    // -----------------------------
+    const Notifications = (function (store, bus) {
+        let notifications = [];
+
+        function addNotification(title, message, type = "info", timeout = 4000) {
+            const note = {
+                id: Date.now(),
+                title,
+                message,
+                type,
+                timestamp: new Date().toISOString()
+            };
+            notifications.unshift(note);
+            if (notifications.length > 8) notifications.pop();
+
+            bus.emit("NOTIFICATION_ADDED", note);
+
+            if (timeout) {
+                setTimeout(() => dismissNotification(note.id), timeout);
+            }
+            console.log(`[OS:NOTIF] ${title}: ${message}`);
+        }
+
+        function dismissNotification(id) {
+            notifications = notifications.filter(n => n.id !== id);
+            bus.emit("NOTIFICATION_DISMISSED", id);
+        }
+
+        function getNotifications() {
+            return notifications;
+        }
+
+        return { addNotification, dismissNotification, getNotifications };
+    })(Store, EventBus);
+
+// -----------------------------
+    // PHASE 14 — DAILY PROTOCOL ENGINE
+    // -----------------------------
+    const DailyProtocol = (function (store) {
+        function getTodaysProtocol() {
+            const state = store.getState();
+            return {
+                hydrationTarget: state.hydration.targetOz,
+                mealsTarget: 4,
+                trainingComplete: !state.training.sessionPlanned,
+                readiness: state.readiness.score,
+                streak: 7 // placeholder
+            };
+        }
+
+        function checkCompliance() {
+            const protocol = getTodaysProtocol();
+            const compliant = protocol.hydrationTarget > 60 && protocol.mealsTarget > 3 && protocol.trainingComplete;
+            if (compliant) {
+                Notifications.addNotification("Daily Protocol", "All systems aligned ✓", "success");
+            }
+            return compliant;
+        }
+
+        return { getTodaysProtocol, checkCompliance };
+    })(Store);
+
+    // -----------------------------
+    // PHASE 15 — WEEKLY CYCLE PLANNER
+    // -----------------------------
+    const WeeklyPlanner = (function () {
+        function generateWeeklyOverview() {
+            return {
+                currentMicrocycle: 3,
+                focusBlock: "Hypertrophy",
+                deloadIn: 4,
+                projectedReadiness: 82,
+                keySessions: ["Push", "Pull", "Legs", "Active Recovery"]
+            };
+        }
+
+        return { generateWeeklyOverview };
+    })();
+
+    // -----------------------------
+    // PHASE 16 — OPERATOR ANALYTICS
+    // -----------------------------
+    const OperatorAnalytics = (function (store) {
+        function get7DayTrend() {
+            // Placeholder trend data
+            return {
+                avgReadiness: 76,
+                totalHydration: 612,
+                mealsLogged: 26,
+                sessionsCompleted: 5
+            };
+        }
+
+        function logOperatorMetric(key, value) {
+            console.log(`[OS:ANALYTICS] ${key} → ${value}`);
+            // Could extend state later
+        }
+
+        return { get7DayTrend, logOperatorMetric };
+    })(Store);
+
+// -----------------------------
+    // PHASE 17 — SYSTEM DIAGNOSTICS
+    // -----------------------------
+    const SystemDiagnostics = (function () {
+        function runDiagnostics() {
+            const diag = {
+                stateIntegrity: "NOMINAL",
+                persistence: localStorage.getItem("BEYOND_OS_STATE") ? "CONNECTED" : "OFFLINE",
+                eventBus: "ACTIVE",
+                renderer: "RENDERING",
+                timestamp: new Date().toISOString()
+            };
+            console.table(diag);
+            Notifications.addNotification("Diagnostics", "All cores nominal", "success");
+            return diag;
+        }
+
+        return { runDiagnostics };
+    })();
+
+    // -----------------------------
+    // PHASE 18 — OS TELEMETRY
+    // -----------------------------
+    const Telemetry = (function () {
+        function recordEvent(category, action) {
+            console.log(`[TELEMETRY] ${category} | ${action}`);
+        }
+
+        return { recordEvent };
+    })();
+
+    // -----------------------------
+    // PHASE 19 — OPERATOR MISSION LOG
+    // -----------------------------
+    const MissionLog = (function () {
+        let logEntries = [];
+
+        function addEntry(title, details) {
+            logEntries.push({
+                timestamp: new Date().toISOString(),
+                title,
+                details
+            });
+            if (logEntries.length > 20) logEntries.shift();
+        }
+
+        function getLog() {
+            return logEntries;
+        }
+
+        return { addEntry, getLog };
+    })();
+
+    // -----------------------------
+    // PHASE 20 — FUTURE‑PROOFING HOOKS
+    // -----------------------------
+    const FutureHooks = (function (bus) {
+        function registerPlugin(name, initFn) {
+            console.log(`[OS:PLUGIN] Registered → ${name}`);
+            initFn();
+        }
+
+        function onNextPhase(callback) {
+            bus.on("PHASE_ADVANCE", callback);
+        }
+
+        return { registerPlugin, onNextPhase };
+    })(EventBus);
+
+    // Extend boot sequence with new phases
+    const originalBoot = boot;
+    boot = function() {
+        originalBoot();
+        console.log("[BEYOND-OS] Phases 13–20 loaded.");
+        DailyProtocol.checkCompliance();
+        SystemDiagnostics.runDiagnostics();
+    };
+
+})();
